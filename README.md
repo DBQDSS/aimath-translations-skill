@@ -87,7 +87,28 @@ python scripts/audit_latex.py path/to/project --profile mathtranslations --stric
 默认情况下，确定性错误返回非零状态；`--strict` 也会让警告返回非零状态，
 适合 CI。`--profile mathtranslations` 还会检查 XeLaTeX、模板元信息、字体与
 链接配置、术语键、长证明配对、句末标点、行间公式环境、引号写法、列表
-环境和最终术语索引。
+环境、最终术语索引，以及 `mathtranslation.cls` 项目的 `\makecover`/
+`\makecontents`/`\makebibliography` 调用、biblatex 是否重复加载等。
+
+## 专项审校 Skills（`skills/`）
+
+`skills/` 目录收录了一组围绕数学译本工作流的专项 skill，各自独立、带有自己的
+`SKILL.md` 与脚本，可按需单独注册到 Agent，也可配合根目录的主 skill 使用：
+
+| 目录 | 用途 |
+| --- | --- |
+| `latex-translation-fidelity-audit` | 全面审校中文译稿对原书的忠实度：结构（缺节、裸引用、习题标题、未译标题）与词汇/数学（算子宏、花体字母、残留英文）两个层面 |
+| `latex-eq-numbering-audit` | 对照原书逐条核对公式编号，报告并修复缺号、错号、计数器未重置等问题 |
+| `latex-array-diagram-audit` | 审校译稿中的图：array 环境图改绘为 tikzcd，已有 tikzcd 核对箭头方向与网格完整性 |
+| `latex-display-layout-audit` | 对照原书审校行间公式版面（过度折行、假对齐、环境嵌套等），修复时不动公式编号 |
+| `latex-footnote-fidelity-audit` | 证明 OCR 记录的每条脚注都进入了排版后的 PDF，并修复丢失者 |
+| `latex-ocr-math-defect-audit` | 找出并修复 OCR 层在到达 LaTeX 之前悄悄损毁的数学内容（尤其脚注内公式） |
+| `latex-bookmark-anchor-audit` | 审计并修复 PDF 书签/目录超链接锚点，解决"点击跳转位置不对" |
+| `mathtranslation-build-verify` | 编译并可视化验证 LaTeX 文档（xelatex + biber + texindy），证明结果正确而非仅无报错 |
+| `mathtranslation-cls-v31-upgrade` | 把旧模板（v1.x，ctexart）译本迁移到 `mathtranslation.cls` v3.1，含回归审计 |
+| `mathtranslation-hardref` | 把译稿中手写的硬编码引用（定理 3.4、方程 (22)、跨章裸编号）转成可点击交叉引用 |
+| `math-pdf-bookmark` | 批量为数学 PDF 添加精确到标题纵坐标的可点击书签（文本层与纯扫描两类） |
+| `pdf-scanned-ocr-bookmark` | 用命令行 OCR 为纯扫描 PDF 加不可见文本层，并重建目录书签树 |
 
 ## 目录
 
@@ -104,7 +125,20 @@ mathtranslations/
 │   ├── review-checklist.md
 │   └── workflow.md
 ├── scripts/audit_latex.py
-└── tests/test_audit_latex.py
+├── tests/test_audit_latex.py
+└── skills/                    # 专项审校 skills，各自独立可用
+    ├── latex-translation-fidelity-audit/
+    ├── latex-eq-numbering-audit/
+    ├── latex-array-diagram-audit/
+    ├── latex-display-layout-audit/
+    ├── latex-footnote-fidelity-audit/
+    ├── latex-ocr-math-defect-audit/
+    ├── latex-bookmark-anchor-audit/
+    ├── mathtranslation-build-verify/
+    ├── mathtranslation-cls-v31-upgrade/
+    ├── mathtranslation-hardref/
+    ├── math-pdf-bookmark/
+    └── pdf-scanned-ocr-bookmark/
 ```
 
 ## 来源与边界
@@ -119,8 +153,15 @@ mathtranslations/
 实际 TeX 与示例 PDF。模板 TeX 与 logo 经版权所有者授权，作为本仓库 MIT
 许可内容公开；编译示例 PDF 未打包，因为运行 skill 不需要它。
 
+**当前书籍项目实际使用的模板是 `mathtranslation.cls`（基于 ctexbook 的类文件，
+由用户维护，不在本仓库内捆绑）**，与上面那个单文件 ctexart 模板是同源但不同的
+两条线。本 skill 的 `references/mathtranslations-template.md` 已把 `mathtranslation.cls`
+v3.x 作为主路径说明，单文件 ctexart 模板仅作历史参考。`assets/` 中仍保留
+`mathtranslations-translation-template.tex` 与 `logo.pdf`（封面 logo 仍为
+`mathtranslation.cls` 所用）。
+
 数学翻译仍需要领域知识和人工判断。编译成功或脚本检查通过，不代表数学内容
-已经正确。
+已经正确；编号也要从生成的 PDF 文本中抽验，而不能只看退出码。
 
 ## License
 

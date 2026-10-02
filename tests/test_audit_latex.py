@@ -177,6 +177,57 @@ class AuditLatexTests(unittest.TestCase):
             self.assertTrue(any("XeLaTeX" in item for item in warnings))
             self.assertTrue(any("printterminology" in item for item in warnings))
 
+    def test_mathtranslations_profile_accepts_cls_project(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "mathtranslation.cls").write_text(
+                "\\newcommand{\\newterm}[3]{#2（#3）}\n"
+                "\\newcommand{\\printterminology}{}\n"
+                "\\newcommand{\\longprooflink}[2]{#2}\n"
+                "\\newenvironment{longproof}[2]{}{}\n"
+                "\\newenvironment{exercises}{}{}\n"
+                "\\newenvironment{answers}[1]{}{}\n"
+                "\\def\\fonts{FandolSong FandolKai FandolFang}\n"
+                "\\usepackage{tikz-cd}\n"
+                "\\newcommand{\\makecover}{}\n"
+                "\\newcommand{\\makecontents}{}\n"
+                "\\newcommand{\\makebibliography}{}\n"
+                "\\def\\cover{\\Translator\\ 翻译及重排}\n",
+                encoding="utf-8",
+            )
+            (root / "refs.bib").write_text(
+                "@book{sample, title={Example}}\n", encoding="utf-8"
+            )
+            (root / "tools").mkdir()
+            (root / "tools" / "build.sh").write_text(
+                "#!/usr/bin/env bash\nxelatex main && biber main && xelatex main\n",
+                encoding="utf-8",
+            )
+            (root / "main.tex").write_text(
+                "% !TeX program = xelatex\n"
+                "\\documentclass[BookTitleCN={示例},BookTitleEN={Example},"
+                "OriginalAuthor={A},OriginalEdition={1st},OriginalPublisher={P},"
+                "OriginalYear={2024},Translator={T},ModelUsed={M},"
+                "TranslationDate={2026}]{mathtranslation}\n"
+                "\\addbibresource{refs.bib}\n"
+                "\\begin{document}\n"
+                "\\makecover\n"
+                "\\frontmatter\n"
+                "\\makecontents\n"
+                "\\mainmatter\n"
+                "\\chapter{引言}\n"
+                "正文内容.\\newterm{example}{示例}{example}.\n"
+                "\\makebibliography\n"
+                "\\printterminology\n"
+                "\\end{document}\n",
+                encoding="utf-8",
+            )
+
+            errors, warnings = AUDIT.audit(root, profile="mathtranslations")
+
+            self.assertEqual([], errors)
+            self.assertEqual([], warnings)
+
 
 if __name__ == "__main__":
     unittest.main()

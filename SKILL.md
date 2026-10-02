@@ -40,10 +40,19 @@ the source, and maintained as a real LaTeX project.
   `MathTranslations-Template.zip` are earlier releases of the same template.
   Read [references/mathtranslations-template.md](references/mathtranslations-template.md)
   before adapting it.
+- The current MathTranslations template for books is the `mathtranslation.cls`
+  class (ctexbook-based). If the user supplies or prefers it, use its public
+  interface (`\makecover`, `\frontmatter`, `\makecontents`, `\makebibliography`,
+  `\printterminology`) and build via `tools/build.sh full` (xelatex ×2 → biber →
+  xelatex ×2). biblatex is loaded by the class from `BibStyle`/`BibFile`
+  options, so only call `\addbibresource` — never `\usepackage{biblatex}`. The
+  older single-file `mathtranslations-translation-template.tex` (ctexart) is
+  bundled under `assets/` as a legacy reference only.
 - If the user selects the MathTranslations template but supplies no template
   files, copy `assets/mathtranslations-translation-template.tex` and
-  `assets/logo.pdf` into the project. Keep the bundled masters unchanged; edit
-  the project copies.
+  `assets/logo.pdf` into the project for the legacy variant, or the maintained
+  `mathtranslation.cls` + `logo.pdf` for the current variant. Keep the bundled
+  masters unchanged; edit the project copies.
 - If the user supplies a newer template, prefer that version after comparing
   its contract with the bundled baseline and recording any meaningful changes.
 - Build a small project glossary before translating substantial text. Reuse
@@ -67,10 +76,12 @@ the source, and maintained as a real LaTeX project.
   with the `tikz-cd` package and `tikzcd` environment. Do not replace them with
   screenshots or raster images. Preserve every node, label, arrow direction,
   arrow style, and commutative relationship from the source.
-- Handle ordinary figures by priority: when the source PDF has good quality
-  and the figure is clear, crop a faithful screenshot as the preferred asset;
-  redraw simple figures with ordinary TikZ; keep `tikzcd` for arrow-and-node
-  diagrams. Record any exception.
+- Handle ordinary figures by priority: when the source PDF is a clean vector
+  PDF, re-render the figure region at 400 DPI with `pymupdf` and autocrop it as
+  the preferred asset (perfect clarity, no raster blur); redraw simple figures
+  with ordinary TikZ; keep `tikzcd` for arrow-and-node diagrams. For crooched
+  crops feed a hand-verified `bbox` through an override table. Record any
+  exception.
 - Typeset display formulas uniformly in `align`, `aligned`, or `align*`
   environments. Never place multiple `\[ \]` blocks side by side; merge them
   into a single environment.
@@ -101,13 +112,20 @@ the source, and maintained as a real LaTeX project.
 
 Verification is part of the translation, not an optional final polish.
 
-1. Compile early and repeatedly with the project's actual build command.
-2. Compare the generated PDF with the source PDF section by section.
+1. Compile early and repeatedly with the project's actual build command
+   (`bash tools/build.sh full` for the `mathtranslation.cls` workflow: xelatex
+   ×2 → biber → xelatex ×2). Always start from a clean auxiliary state after any
+   template or `main.tex` change — stale `.aux`/`.toc` from a previous template
+   version can crash the first pass.
+2. Compare the generated PDF with the source PDF section by section. Also assert
+   the *rendered* numbering by extracting text from the PDF (期望 `定义 X.M.K`,
+   `定理 X.Y`, `图 X.Y`); a clean build can still ship wrong numbers.
 3. Perform three separate passes: Chinese language and terminology;
    mathematics and structural fidelity; compilation and visual layout.
 4. Run `scripts/audit_latex.py <project-or-tex-file>` for deterministic checks.
-   Add `--profile mathtranslations` for projects based on the inspected
-   MathTranslations template, and use `--strict` when warnings should fail CI.
+   Add `--profile mathtranslations` for projects based on the
+   `mathtranslation.cls` template, and use `--strict` when warnings should fail
+   CI.
 5. Read [references/review-checklist.md](references/review-checklist.md) before
    declaring a chapter or project complete.
 

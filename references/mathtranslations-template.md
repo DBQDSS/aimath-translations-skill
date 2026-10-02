@@ -1,34 +1,22 @@
 # MathTranslations Template Profile
 
-Read this reference when the user supplies or requests
-`mathtranslations-translation-template.zip` or
-`mathtranslations-translation-template.tex`. Archives named
-`MathTranslations-Template.zip` or `MathTranslations-Template.tex` are earlier
-releases of the same template.
+Read this reference when the user supplies or requests a MathTranslations-style
+LaTeX template. There are two related templates in circulation, and they are
+**not** interchangeable:
 
-## Inspected Version
+- **Current (use this for book projects):** `mathtranslation.cls` — a
+  `ctexbook`-based class with real `\chapter`/`\section`/`\subsection`
+  hierarchy, a public build/cover/bibliography interface, and biblatex+biber
+  bibliography. This is what the user's translation projects actually use.
+- **Legacy (reference only):** `mathtranslations-translation-template.tex` —
+  the older single-file `ctexart` template (numbering by subsection,
+  `exercises`/`answers`/`longproof`, local `mybibliography`). The skill still
+  bundles this file under `assets/` as a historical reference; prefer the
+  maintained `mathtranslation.cls` for new work.
 
-The profile below was derived from the locally supplied archive:
-
-- archive: `mathtranslations-translation-template.zip`;
-- inspected: 2026-08-23;
-- SHA-256:
-  `4C2E5AD1C81646B4E8AD53F4B5FD5BAA7D477C749915E32CF52B5EE71F85F12E`;
-- contents: `mathtranslations-translation-template.tex`,
-  `mathtranslations-translation-template.pdf`, and `logo.pdf`.
-
-The MathTranslations founder and copyright holder authorized the template TeX
-and logo for publication in this skill under the MIT License. Bundled copies
-are available at:
-
-- `assets/mathtranslations-translation-template.tex`, SHA-256
-  `B2CC106209969E77878F3BA6DFE0BF050D4D38DA0C68E558A96241350827531E`;
-- `assets/logo.pdf`, SHA-256
-  `8B3839ADBF870A8C5E825C9F004125816835BBB321617E619E5F589B672FC8D5`.
-
-The compiled template example PDF is not needed at runtime and is not bundled.
-Use a user-supplied or current official template when it is newer, because the
-online template may change.
+The class file is maintained by the user (canonical copy lives in the user's
+template directory), so inspect the *supplied* `mathtranslation.cls` instead of
+relying on memory. The profile below was derived from `mathtranslation.cls` v3.x.
 
 ## Authority
 
@@ -36,8 +24,8 @@ Keep two priorities separate:
 
 1. the source book or paper PDF is the highest authority for content, formulas,
    structure, and displayed numbering;
-2. the supplied `mathtranslations-translation-template.tex` is the highest
-   authority for typesetting when the user has selected this template;
+2. the supplied `mathtranslation.cls` is the highest authority for typesetting
+   when the user has selected this template;
 3. OCR, MinerU Markdown, or extracted TeX is a working draft only.
 
 If source numbering conflicts with the template counters, adapt counters or
@@ -46,44 +34,73 @@ edition. Do not hard-code visible numbers in prose.
 
 ## Engine And Base Layout
 
-The inspected template expects:
+The current template expects:
 
-- XeLaTeX, normally run at least twice;
-- `ctexart` with `UTF8`, `12pt`, and `fontset=none`;
-- `tikz-cd` for commutative and arrow-and-node mathematical diagrams;
-- A4 paper with 2.5 cm left/right and 2.8 cm top/bottom margins;
-- CMU Serif for English;
-- Fandol Song for Chinese prose and examples;
-- Fandol Kai for a newly introduced term;
-- Fandol Fang for definitions, lemmas, theorems, propositions, corollaries,
-  and remarks;
-- 2-em paragraph indentation, no paragraph skip, and 1.16 line spacing.
+- **XeLaTeX**, run through the project build script `tools/build.sh full`
+  (xelatex ×2 → biber → xelatex ×2). A lone `xelatex` invocation will not
+  resolve the table of contents, cross-references, the biblatex bibliography,
+  or the terminology index.
+- `mathtranslation.cls`, which wraps **`ctexbook`** — so `\part`/`\chapter`/
+  `\section`/`\subsection` are real, native levels. Do not fake a chapter with
+  `\section` (the v1.2 convention); use `\chapter` directly.
+- `tikz-cd` for commutative and arrow-and-node mathematical diagrams.
+- **Fandol** CJK fonts: Fandol Song for prose/examples, Fandol Kai for a newly
+  introduced term, Fandol Fang (via `\theoremfont`) for theorem-like bodies.
+  CMU Serif or a Latin font for English.
+- A4 paper with the class's default margins; 2-em paragraph indentation and the
+  class's line spacing.
 
-Use the full project build sequence when bibliography, index, or other tools
-require more than two XeLaTeX runs.
+## Public Interface (v3.x)
+
+The class exposes these commands; call them in `main.tex` rather than rebuilding
+the machinery:
+
+```tex
+\makecover                 % title page (uses the BookTitle*/Translator metadata)
+\frontmatter               % Roman numerals; for 译者说明 / 前言 (\chapter*)
+\makecontents             % table of contents
+\mainmatter               % Arabic numerals; the book body
+\appendix                 % switches chapter counters to letters A, B, C, ...
+\makebibliography         % emits \chapter{参考文献} + prints biblatex entries
+\printterminology         % emits \chapter{术语索引}; call once, last
+```
+
+Minimal `main.tex` shape:
+
+```tex
+\documentclass[
+  BookTitleCN={...}, BookTitleEN={...}, OriginalAuthor={...},
+  OriginalEdition={...}, OriginalPublisher={...}, OriginalYear={...},
+  Translator={...}, ModelUsed={...}, BibStyle=numeric
+]{mathtranslation}
+
+\addbibresource{references.bib}   % biblatex is loaded by the class; do NOT \usepackage{biblatex} here
+
+\begin{document}
+\makecover
+\frontmatter
+\chapter*{译者说明}\addcontentsline{toc}{chapter}{译者说明}
+\chapter*{前言}\addcontentsline{toc}{chapter}{前言}
+\makecontents
+\mainmatter
+\include{chapters/ch01}
+% ... chapters ...
+\appendix
+\include{chapters/chA}
+\makebibliography
+\printterminology
+\end{document}
+```
 
 ## Cover Metadata
 
-Replace every sample value before publishing:
-
-```tex
-\BookTitleCN
-\BookTitleEN
-\OriginalAuthor
-\OriginalEdition
-\OriginalPublisher
-\OriginalYear
-\Translator
-\ModelUsed
-\TranslationDate
-```
-
-The cover includes the Chinese and English titles, author, edition, publisher,
-year, translator, primary model, update date, and `logo.pdf`. In the
-bottom-right corner the publisher line (`\OriginalEdition · \OriginalPublisher
-· \OriginalYear`) is followed by a `\Translator 翻译及重排` credit line set
-slightly larger than the publisher line. Keep provenance accurate. Do not
-claim a model, translator, edition, or date that was not used.
+Set metadata through the `\documentclass` options (the class defines
+`\BookTitleCN`, `\BookTitleEN`, `\OriginalAuthor`, `\OriginalEdition`,
+`\OriginalPublisher`, `\OriginalYear`, `\Translator`, `\ModelUsed`,
+`\TranslationDate`; you can also `\renewcommand` them). Cover logo is the
+`LogoFile` option (default `logo.pdf`, searched in `graphics/` then the project
+root). The cover prints the publisher line followed by a
+`\Translator\ 翻译及重排` credit line. Keep provenance accurate.
 
 ## Terminology Contract
 
@@ -93,136 +110,133 @@ At the first formal introduction of a concept, use:
 \newterm{stable-key}{中文术语}{English term}
 ```
 
-The stable key must be unique and safe for a generated `term:<key>` label. The
-command typesets the Chinese term in Kai, adds the English term in parentheses,
-and records the first page for the terminology index.
-
-After first introduction, write the Chinese term normally. Use `\termcn{...}`
-only for deliberate visual emphasis; it does not add an index entry.
-
-Place exactly one `\printterminology` call at the end of the document, after
-the bibliography and all other translated content.
+The stable key must be unique and label-safe. The command typesets the Chinese
+term in Kai, appends the English term in parentheses, and records the first page
+for the terminology index. After first introduction, write the Chinese term
+normally. Use `\termcn{...}` only for deliberate visual emphasis (no index row).
+Use `\addterm{中文术语}{English term}{页码文字}` to force a fixed page entry.
+Place exactly one `\printterminology` call at the very end of the document.
 
 ## Semantic Environments
 
-The template numbers these environments by subsection:
+The class provides (all default to numbering **by section**, `X.M`):
 
-- `definition`, `lemma`, `theorem`, `corollary`, `proposition`, and `remark`
-  use Fang;
-- `example` and `problem` use Song;
-- `proof` uses Song and ends with `\square`;
-- `example` and `remark` end with `\diamond`.
+- `definition`, `lemma`, `theorem`, `corollary`, `proposition`, `remark` —
+  Fang body;
+- `example`, `problem` — Song body;
+- `proof` — Song, ends with `\square`;
+- `longproof` / `\longprooflink` — move a long proof to the end of its section
+  with a clickable link;
+- `exercises` / `answers` — subsection exercise/answer pairs with back-links.
 
-Keep the source environment type. Use labels and real references such as
-`\autoref`, `\ref`, and `\eqref`. The template provides Chinese `\autoref`
-names.
+Keep the source environment type. Use labels and real references
+(`\autoref`, `\ref`, `\eqref`, `\cref`). The class provides Chinese `\autoref`
+and `\cref` names.
+
+### Remapping numbering to match a source book
+
+The class defaults everything to per-section numbering, but most printed books
+number theorems/problems/questions/figures **by chapter** (`X.Y`) and
+definitions **by section** (`X.M.K`). Achieve that in `main.tex` with counter
+surgery — do not edit the class:
+
+```tex
+% 定理/引理/推论/命题/注/例/问题 按章编号 (X.Y)
+\counterwithout{theorem}{section}   \counterwithin{theorem}{chapter}
+\counterwithout{lemma}{section}     \counterwithin{lemma}{chapter}
+\counterwithout{corollary}{section} \counterwithin{corollary}{chapter}
+\counterwithout{proposition}{section}\counterwithin{proposition}{chapter}
+\counterwithout{remark}{section}    \counterwithin{remark}{chapter}
+\counterwithout{example}{section}   \counterwithin{example}{chapter}
+\counterwithout{problem}{section}   \counterwithin{problem}{chapter}
+% definition 保持按节编号 (X.M.K)：不动
+% 图按章编号 (X.Y)
+\counterwithout{figure}{section}    \counterwithin{figure}{chapter}
+% 正文穿插的 Question 环境（按章）
+\theoremstyle{mtsong}\newtheorem{question}{问题}[chapter]
+\crefname{question}{问题}{问题}
+\makeatletter\MT@defautorefname{question}{问题}\makeatother
+```
+
+Verify the *actual* rendered numbers by extracting text from the compiled PDF
+(see "Common Pitfalls" below) rather than trusting `exit code 0`.
 
 ## Display Math, Lists, And Quotes
 
 The template requires three uniform typesetting habits:
 
 - display formulas use `align`, `aligned`, or `align*` environments only;
-  multiple `\[ \]` blocks in a row must be merged into one environment. The
-  sample body demonstrates numbered `align` with `\label`/`\eqref` and
-  unnumbered `align*`;
+  multiple `\[ \]` blocks in a row must be merged into one environment;
 - every ordered list uses `enumerate`; manual numbering is not accepted;
 - Chinese double quotes use the TeX ligatures — two grave accents for the
   opening quote and two straight apostrophes for the closing quote — never
-  Unicode curly quotes, because the apostrophe pair alone renders a closing
-  quote.
+  Unicode curly quotes;
+- Chinese prose sentences end with an ASCII `.` (not `。`), matching the
+  template's punctuation policy.
 
 The audit script flags consecutive display-math blocks, Unicode curly quotes,
-and manually numbered lists under the `mathtranslations` profile.
+manual numbering, and stray `。` under the `mathtranslations` profile.
 
 ## Figures
 
-Figure handling follows this priority:
+Figure handling follows this priority, and the figures must be **clear**:
 
-1. when the source PDF has good quality and the figure is clear, crop a
-   faithful screenshot as the preferred asset;
-2. redraw simple figures with ordinary TikZ;
-3. rebuild every commutative diagram, morphism diagram, category diagram,
-   pullback or pushout square, and similar arrow-and-node diagram in a
-   `tikzcd` environment — never as a screenshot.
+1. When the source PDF is a clean **vector** PDF, re-render the figure region
+   at high resolution (400 DPI) from the original and autocrop — `pymupdf`
+   (`fitz`) gives perfect clarity with no raster blur. Use the project's
+   `tools/figcrop.py` to locate each `Fig. N.M` caption, crop its bounding box,
+   and autotrim whitespace to `images/fig/fig-X-Y.png`.
+2. Redraw simple figures with ordinary TikZ; rebuild every commutative diagram,
+   morphism diagram, category diagram, pullback/pushout square, and similar
+   arrow-and-node diagram in a `tikzcd` environment — never as a screenshot.
+3. For crooched crops (figures whose caption sits *below* the art, or unusual
+   boundaries), feed a hand-verified `bbox` through an override table such as
+   `tools/_figoverride.json` rather than editing the source.
 
-The bundled template loads `tikz` and `tikz-cd`. Compare the compiled result
-with the source for node placement, labels, arrow directions, hooks,
-two-headed arrows, isomorphisms, dashed arrows, bends, and commutative
-relationships. Record any figure that cannot follow this priority.
+After cropping, repoint every `\includegraphics` with
+`tools/rewire_figures.py` (back up `chapters/` first). Distinguish a real
+figure caption `Fig. N.M` from an explanatory paragraph that merely begins with
+"Figure N.M …".
 
-## Long Proofs
+## Common Pitfalls (learned the hard way)
 
-For a proof moved to the end of its subsection, use a matched pair:
-
-```tex
-\longprooflink{first-iso-proof}{查看完整证明}
-
-\begin{longproof}{first-iso-proof}{\autoref{thm:first-iso}}
-...
-\end{longproof}
-```
-
-Each key must have exactly one source link and one `longproof` environment.
-Place the long proof before the subsection's exercises. Do not move a proof
-merely to shorten a page; use this mechanism for genuinely long proofs and
-preserve the source's logical location.
-
-## Exercises And Answers
-
-Place subsection exercises in:
-
-```tex
-\begin{exercises}
-  \item ...
-\end{exercises}
-```
-
-The template labels them from the current subsection. Put answers in an
-appendix using the matching subsection prefix:
-
-```tex
-\begin{answers}{1.2}
-  \item ...
-\end{answers}
-```
-
-The generated exercise and answer labels provide bidirectional links. Preserve
-exercise order and ensure each answer points to the intended exercise.
-
-## Links, Bibliography, And Section Style
-
-The inspected template uses:
-
-- `MidnightBlue` for internal links and URLs;
-- `BrickRed` for citations;
-- clickable table-of-contents titles and page numbers;
-- numbered PDF bookmarks and no visible link boxes;
-- chapter-like numbered `section` headings;
-- appendix-aware section labels;
-- a local `mybibliography` wrapper around `thebibliography`.
-
-Preserve citation keys and source bibliography facts. A project may replace the
-sample bibliography implementation only when it retains equivalent citation
-behavior and the selected template's presentation.
+- **Stale auxiliary files when switching templates.** After changing the class
+  or `main.tex` substantially, delete `main.aux`, `main.toc`, `main.out`,
+  `main.bbl`, `main.bcf`, `main.run.xml` and rebuild clean. An old `.toc` from
+  a previous template version can contain conditional tokens (e.g.
+  `\InAppendixToctrue`) the new class does not define, which crashes the first
+  pass with `! Undefined control sequence`.
+- **Do not load biblatex twice.** `mathtranslation.cls` already loads biblatex
+  from the `BibStyle`/`BibFile` options. Adding `\usepackage{biblatex}` in
+  `main.tex` causes option-clash or double-load errors. Only call
+  `\addbibresource`.
+- **Class version drift.** v1.2 faked `\chapter` with `\section` and numbered
+  definitions by subsection; v3.x is genuine `ctexbook`. Inspect the supplied
+  `.cls` (`grep` for `ctexbook`, `\newtheorem`, the public commands) before
+  assuming the environment names, numberings, or public macros. The class
+  defines `problem` but **not** `question`; define `question` in `main.tex`.
+- **Verify numbering from the PDF, not the exit code.** A clean build can still
+  ship wrong numbers (e.g. a stray three-level `问题 1.4.1`). Extract text with
+  `pymupdf` and assert `定义 X.M.K`, `定理 X.Y`, `图 X.Y` patterns before
+  declaring done.
+- **Front/back matter order.** The terminology index and bibliography must come
+  after `\appendix`/`\mainmatter` in the right order; `\printterminology` is
+  literally the last call.
 
 ## Adoption Procedure
 
-1. Keep an untouched copy of the supplied archive or TeX for comparison.
-2. If no template is supplied, copy
-   `assets/mathtranslations-translation-template.tex` and `assets/logo.pdf`
-   from this skill into the translation project. Never edit the bundled
-   masters in place.
-3. If a template is supplied, compare it with the bundled baseline and use the
-   supplied version when it is newer or project-specific.
-4. Compile the unchanged project copy to establish a baseline.
-5. Replace all cover metadata and keep the `\Translator 翻译及重排` credit
-   line below the publisher line.
-6. Remove the sample body, not the required preamble, macros, or environments.
-7. Import the source structure and adapt numbering to the relevant edition.
-8. Use `\newterm` once for each indexed concept.
-9. Keep long-proof and exercise-answer link pairs balanced.
-10. Typeset display math with `align`-family environments, ordered lists with
-    `enumerate`, and Chinese quotes with the TeX ligatures.
-11. Put `\printterminology` last.
-12. Compile with XeLaTeX at least twice, run the template profile audit, and
-    compare the generated PDF with both the source PDF and the template sample.
+1. Keep an untouched copy of the supplied `mathtranslation.cls` for comparison.
+2. If no class is supplied, copy the maintained `mathtranslation.cls` (and
+   `logo.pdf`) into the project; never edit the class in place for project
+   specifics — use `main.tex` and a `mycommand`-style preamble.
+3. Compile the unchanged project once to establish a baseline.
+4. Replace all cover metadata and keep the `\Translator 翻译及重排` credit line.
+5. Import the source structure; remap counters (above) to match the edition.
+6. Crop figures with `tools/figcrop.py`, then repoint with
+   `tools/rewire_figures.py` (back up first).
+7. Use `\newterm` once per indexed concept; keep long-proof and
+   exercise-answer link pairs balanced.
+8. Typeset display math with `align`-family environments, ordered lists with
+   `enumerate`, Chinese quotes with the TeX ligatures.
+9. Put `\printterminology` last; run `tools/build.sh full`; compare the
+   generated PDF with both the source PDF and the expected numbering.
