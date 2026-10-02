@@ -110,10 +110,11 @@ Check that every `\includegraphics` target resolves with the project's extension
 and search-path rules. Do not redraw or replace mathematical diagrams unless
 the user requests it or the source asset cannot legally or technically be used.
 When the MathTranslations template is selected, follow its figure priority:
-crop a faithful screenshot from a good-quality source PDF for clear figures,
-redraw simple figures with TikZ, and rebuild arrow-and-node diagrams with
-`tikz-cd`. When recreating a diagram, compare geometry, labels, orientation,
-and semantic relationships, not just visual style.
+re-render the figure region at 400 DPI from a clean vector source PDF with
+`pymupdf` and autocrop for clear figures, redraw simple figures with TikZ, and
+rebuild arrow-and-node diagrams with `tikz-cd`. When recreating a diagram,
+compare geometry, labels, orientation, and semantic relationships, not just
+visual style.
 
 For arrow-and-node mathematical diagrams, use:
 
@@ -146,9 +147,15 @@ Use the project's build command. A successful single engine invocation may not
 resolve bibliography, index, glossary, or cross-reference data, so run the full
 build sequence.
 
-For the inspected MathTranslations template, the baseline is XeLaTeX run at
-least twice. The first run records labels and terminology entries; later runs
-resolve page numbers, links, and the terminology table.
+For the `mathtranslation.cls` template, the canonical build is
+`bash tools/build.sh full` (xelatex ×2 → biber → xelatex ×2): the first
+xelatex pass records labels and terminology entries, biber resolves the
+bibliography, and the later passes resolve page numbers, links, the table of
+contents, and the terminology table. **After any change to the class or
+`main.tex`, delete the auxiliary files (`main.aux`, `main.toc`, `main.out`,
+`main.bbl`, `main.bcf`, `main.run.xml`) and rebuild clean** — a stale `.toc`
+from another template version can crash the first pass with an undefined
+control sequence such as `\InAppendixToctrue`.
 
 Inspect logs for:
 
@@ -160,4 +167,6 @@ Inspect logs for:
 - bibliography, index, and glossary failures.
 
 Compilation proves syntactic and toolchain consistency. It does not prove that
-the translation or mathematics is correct.
+the translation or mathematics is correct, and a clean build can still ship
+wrong displayed numbers — verify the rendered numbering (定理 X.Y, 定义 X.M.K,
+图 X.Y) by extracting text from the PDF.

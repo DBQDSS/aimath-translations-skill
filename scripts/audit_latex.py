@@ -18,6 +18,7 @@ EXCLUDED_DIRS = {
     "dist",
     "node_modules",
     "out",
+    "mathtranslations-skill",
 }
 
 COMMAND_PATTERNS = {
@@ -93,6 +94,26 @@ TEMPLATE_MARKERS = {
     "URL color": "urlcolor=MidnightBlue",
     "clickable TOC entries": "linktoc=all",
     "cover translator credit": r"\Translator\ 翻译及重排",
+}
+
+# Markers expected in a project built on the current `mathtranslation.cls`
+# (ctexbook-based) template. The class file supplies most of them, so the audit
+# scans the whole project (including the .cls) for their presence.
+CLS_MARKERS = {
+    "terminology command": r"\newcommand{\newterm}",
+    "terminology index command": r"\newcommand{\printterminology}",
+    "long-proof source link": r"\newcommand{\longprooflink}",
+    "long-proof environment": r"\newenvironment{longproof}",
+    "exercise environment": r"\newenvironment{exercises}",
+    "answer environment": r"\newenvironment{answers}",
+    "Song CJK font": "FandolSong",
+    "Kai terminology font": "FandolKai",
+    "Fang theorem font": "FandolFang",
+    "tikz-cd package": "tikz-cd",
+    "cover translator credit": r"\Translator\ 翻译及重排",
+    "public makecover": r"\newcommand{\makecover}",
+    "public makecontents": r"\newcommand{\makecontents}",
+    "public makebibliography": r"\newcommand{\makebibliography}",
 }
 
 
@@ -231,52 +252,116 @@ def audit_mathtranslations_profile(
 
     raw_text = "\n".join(raw_parts)
     active_text = "\n".join(active_parts)
+    # The user's own \printterminology call lives in a .tex file; counting it
+    # across .cls/.sty would also catch class definitions and backup samples.
+    tex_active = "\n".join(
+        strip_comments(read_text(sf))
+        for sf in source_files
+        if sf.suffix.lower() == ".tex"
+    )
 
     if not re.search(
         r"(?im)^%\s*!\s*TeX\s+program\s*=\s*xelatex\s*$", raw_text
     ):
         warnings.append("MathTranslations profile: missing XeLaTeX editor directive")
 
-    document_class = re.search(
-        r"\\documentclass\s*\[([^\]]*)\]\s*\{ctexart\}", active_text
-    )
-    if not document_class:
-        warnings.append(
-            "MathTranslations profile: expected a ctexart document class declaration"
+    uses_cls = bool(
+        re.search(
+            r"\\documentclass\s*(?:\[[^\]]*\]\s*)?\{mathtranslation\}", active_text
         )
-    else:
-        options = {item.strip() for item in document_class.group(1).split(",")}
-        for option in ("UTF8", "12pt", "fontset=none"):
-            if option not in options:
-                warnings.append(
-                    f"MathTranslations profile: ctexart option {option!r} is missing"
-                )
+    ) or any(
+        sf.suffix.lower() == ".cls" and sf.name.lower() == "mathtranslation.cls"
+        for sf in source_files
+    )
+    uses_ctexart = bool(
+        re.search(r"\\documentclass\s*(?:\[[^\]]*\]\s*)?\{ctexart\}", active_text)
+    )
+    if not (uses_cls or uses_ctexart):
+        warnings.append(
+            "MathTranslations profile: expected a 'mathtranslation' (ctexbook) "
+            "document class or the legacy 'ctexart' template"
+        )
 
-    for description, marker in TEMPLATE_MARKERS.items():
+    if uses_ctexart and not uses_cls:
+        document_class = re.search(
+            r"\\documentclass\s*\[([^\]]*)\]\s*\{ctexart\}", active_text
+        )
+        if document_class:
+            options = {item.strip() for item in document_class.group(1).split(",")}
+            for option in ("UTF8", "12pt", "fontset=none"):
+                if option not in options:
+                    warnings.append(
+                        f"MathTranslations profile: ctexart option {option!r} is missing"
+                    )
+        else:
+            warnings.append(
+                "MathTranslations profile: ctexart used without options; "
+                "expected [UTF8,12pt,fontset=none]"
+            )
+
+    markers = CLS_MARKERS if uses_cls else TEMPLATE_MARKERS
+    for description, marker in markers.items():
         if marker not in active_text:
             warnings.append(
                 f"MathTranslations profile: missing {description} marker {marker!r}"
             )
 
-    for command, sample_value in METADATA_DEFAULTS.items():
-        match = re.search(
-            rf"\\(?:newcommand|renewcommand)\s*\{{\\{command}\}}\s*"
-            r"\{([^{}]*)\}",
-            active_text,
-        )
-        if not match:
+    if uses_cls:
+        for cmd in ("makecover", "makecontents", "makebibliography"):
+            if not command_calls(active_text, cmd):
+                warnings.append(
+                    f"MathTranslations profile: mathtranslation.cls project should "
+                    f"call \\{cmd}"
+                )
+        if re.search(
+            r"\\usepackage\s*(?:\[[^\]]*\]\s*)?\{biblatex\}", active_text
+        ):
             warnings.append(
-                f"MathTranslations profile: missing cover metadata \\{command}"
+                "MathTranslations profile: biblatex is loaded by mathtranslation.cls; "
+                "remove the manual \\usepackage{biblatex} from main.tex"
             )
-        elif not match.group(1).strip():
+        if not re.search(r"\\addbibresource", active_text):
             warnings.append(
-                f"MathTranslations profile: empty cover metadata \\{command}"
+                "MathTranslations profile: add your bibliography with "
+                "\\addbibresource{...}"
             )
-        elif match.group(1).strip() == sample_value:
+        if not re.search(
+            r"\\documentclass\s*(?:\[[^\]]*\]\s*)?\{mathtranslation\}", active_text
+        ) and not re.search(
+            r"\\(?:renewcommand|newcommand)\s*\{\\BookTitleCN\}", active_text
+        ):
             warnings.append(
-                f"MathTranslations profile: sample metadata \\{command} still "
-                f"contains {sample_value!r}"
+                "MathTranslations profile: set cover metadata via the documentclass "
+                "options or \\renewcommand{\\BookTitleCN}{...} etc."
             )
+        if not (project_root / "tools" / "build.sh").is_file() and not (
+            project_root / "build.sh"
+        ).is_file():
+            warnings.append(
+                "MathTranslations profile: no build.sh found; run the full build "
+                "(xelatex x2 -> biber -> xelatex x2) to resolve ToC, references, "
+                "and the terminology index"
+            )
+    else:
+        for command, sample_value in METADATA_DEFAULTS.items():
+            match = re.search(
+                rf"\\(?:newcommand|renewcommand)\s*\{{\\{command}\}}\s*"
+                r"\{([^{}]*)\}",
+                active_text,
+            )
+            if not match:
+                warnings.append(
+                    f"MathTranslations profile: missing cover metadata \\{command}"
+                )
+            elif not match.group(1).strip():
+                warnings.append(
+                    f"MathTranslations profile: empty cover metadata \\{command}"
+                )
+            elif match.group(1).strip() == sample_value:
+                warnings.append(
+                    f"MathTranslations profile: sample metadata \\{command} still "
+                    f"contains {sample_value!r}"
+                )
 
     term_locations: dict[str, list[str]] = {}
     for source_file in source_files:
@@ -308,15 +393,18 @@ def audit_mathtranslations_profile(
                 f"{link_keys[key]} link(s) and {proof_keys[key]} proof environment(s)"
             )
 
-    terminology_calls = command_calls(active_text, "printterminology")
+    terminology_calls = command_calls(tex_active, "printterminology")
     if len(terminology_calls) != 1:
         warnings.append(
             "MathTranslations profile: expected exactly one final "
             f"\\printterminology call, found {len(terminology_calls)}"
         )
     else:
-        trailing = active_text[terminology_calls[0].end() :]
-        trailing = trailing.replace(r"\end{document}", "").strip()
+        trailing = tex_active[terminology_calls[0].end() :]
+        end_doc = trailing.find(r"\end{document}")
+        if end_doc != -1:
+            trailing = trailing[:end_doc]
+        trailing = trailing.strip()
         if trailing:
             warnings.append(
                 "MathTranslations profile: \\printterminology is not the final "

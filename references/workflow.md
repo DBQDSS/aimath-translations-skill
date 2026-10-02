@@ -50,11 +50,14 @@ For a new project:
   untouched copy, and compile the unchanged template as a baseline;
 - if the user did not supply template files, copy the skill's bundled
   `assets/mathtranslations-translation-template.tex` and `assets/logo.pdf`
-  into the project;
+  into the project for the legacy ctexart variant, or the maintained
+  `mathtranslation.cls` + `logo.pdf` for the current ctexbook variant;
 - otherwise choose a Unicode-capable Chinese TeX setup appropriate to the
   environment;
 - keep source assets and generated build artifacts separate;
-- establish a repeatable build command;
+- establish a repeatable build command — for `mathtranslation.cls` projects use
+  `bash tools/build.sh full` (xelatex ×2 → biber → xelatex ×2); start from a
+  clean auxiliary state after any template or `main.tex` change;
 - create a minimal sample containing Chinese prose, formulas, theorem
   environments, references, citations, and one figure before scaling up.
 
@@ -126,12 +129,16 @@ or `align*` environments and never place multiple `\[ \]` blocks side by side.
 
 ### Figures And Tables
 
-Follow the template's figure priority: when the source PDF has good quality
-and a figure is clear, crop a faithful screenshot as the preferred asset;
-redraw simple figures with ordinary TikZ; rebuild arrow-and-node diagrams with
-`tikz-cd` (never screenshots of them). Translate captions and table text
-without changing data. Preserve labels and references. If an asset is missing,
-use an explicit placeholder and report it rather than inventing a replacement.
+Follow the template's figure priority: when the source PDF is a clean vector
+PDF, re-render the figure region at 400 DPI with `pymupdf` and autocrop it as
+the preferred asset (perfect clarity, no raster blur); redraw simple figures
+with ordinary TikZ; rebuild arrow-and-node diagrams with `tikz-cd` (never
+screenshots of them). Use the project's `tools/figcrop.py` to locate each
+`Fig. N.M` caption and crop its bounding box to `images/fig/fig-X-Y.png`, then
+repoint `\includegraphics` with `tools/rewire_figures.py` (back up `chapters/`
+first). Translate captions and table text without changing data. Preserve labels
+and references. If an asset is missing, use an explicit placeholder and report it
+rather than inventing a replacement.
 
 Rebuild commutative diagrams, morphism diagrams, category diagrams, exact
 diagrammatic sequences, and pullback or pushout squares with `tikz-cd`. Match

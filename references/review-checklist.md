@@ -30,8 +30,9 @@ fluent Chinese while missing a mathematical or structural defect.
   complete and in the correct order.
 - [ ] Every arrow-and-node mathematical diagram is rebuilt with `tikzcd`;
   nodes, labels, directions, arrow styles, and commutativity match the source.
-- [ ] Other figures follow the template priority: faithful screenshots from a
-  good-quality source PDF, ordinary TikZ for simple figures.
+- [ ] Other figures follow the template priority: re-rendered at 400 DPI from a
+  clean vector source PDF with `pymupdf` and autocropped (preferred for clarity),
+  ordinary TikZ for simple figures.
 - [ ] Display formulas use `align`-family environments with no juxtaposed
   `\[ \]` blocks; ordered lists use `enumerate`, never manual numbering.
 - [ ] Labels are unique and all references resolve to the intended objects.
@@ -40,9 +41,18 @@ fluent Chinese while missing a mathematical or structural defect.
 
 ## Pass 3: Build And Visual Comparison
 
-- [ ] The full project build succeeds from a clean or documented state.
-- [ ] Bibliography, index, glossary, and cross-references are resolved.
-- [ ] The audit script reports no unexplained errors or warnings.
+- [ ] The full project build succeeds from a clean or documented state
+  (`bash tools/build.sh full` for the `mathtranslation.cls` workflow: xelatex ×2
+  → biber → xelatex ×2). Auxiliary files were cleared after any template or
+  `main.tex` change.
+- [ ] Bibliography, index, glossary, and cross-references are resolved; no
+  undefined references/citations, no `LaTeX Error`, no missing figures, no rerun
+  warnings in the log.
+- [ ] The audit script reports no unexplained errors or warnings
+  (`--profile mathtranslations --strict`).
+- [ ] Displayed numbering was verified by extracting text from the compiled PDF:
+  定义 `X.M.K`, 定理/问题/图 `X.Y` match the source book; no stray three-level
+  numbers.
 - [ ] The generated PDF has been compared with the source PDF page by page or
   section by section.
 - [ ] Display equations, tables, figures, captions, footnotes, and page breaks
@@ -53,13 +63,17 @@ fluent Chinese while missing a mathematical or structural defect.
 - [ ] Overfull boxes, bad breaks, widows, and orphans have been reviewed where
   they materially affect reading.
 - [ ] Links and bookmarks point to the correct destinations.
+- [ ] `biblatex` is loaded only by the class — `main.tex` does not contain a
+  manual `\usepackage{biblatex}` (would cause an option clash).
 - [ ] MathTranslations long-proof links and environments are paired.
 - [ ] MathTranslations exercises and answer prefixes preserve source order and
   navigate to the intended counterparts.
 - [ ] Cover metadata no longer contains sample title, author, translator,
       model, edition, or date values, and the `\Translator 翻译及重排` credit
       line sits directly below the publisher line.
-- [ ] `\printterminology` appears exactly once as the final document content.
+- [ ] `\makecover`, `\makecontents`, `\makebibliography`, and `\printterminology`
+      are each called exactly as required; `\printterminology` is the final
+      document content.
 
 ## Completion Note
 
