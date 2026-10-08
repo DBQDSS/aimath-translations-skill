@@ -92,6 +92,9 @@ those roles unless the supplied template version says otherwise.
 These are prose conventions. Do not apply them inside code, literal prompts,
 or pseudocode syntax. Preserve the source keywords even if an algorithm package
 offers localized definitions; check the compiled output as well as the TeX.
+Descriptions after input/output labels, prose steps, verbal conditions, and safe
+comments inside an algorithm still require translation; syntax protection does
+not exempt its human-language content.
 Read [ai-code-fidelity.md](ai-code-fidelity.md) for protected tokens, safe comment
 translation, AI mathematics, experimental data, and algorithm verification.
 

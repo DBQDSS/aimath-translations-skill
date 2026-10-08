@@ -1,6 +1,6 @@
 ---
 name: latex-translation-fidelity-audit
-description: "Audit Chinese LaTeX translations of AI and mathematics texts against original PDFs for missing structure, broken references, mathematical fidelity, terminology, and untranslated prose. Preserve intentional English in code, algorithms, identifiers, and literal examples; inspect scanner candidates against the source before repair."
+description: "Audit Chinese LaTeX translations of AI and mathematics texts against original PDFs for missing sections or appendices, broken references, mathematical fidelity, terminology, and untranslated prose, including algorithm descriptions. Preserve code/pseudocode syntax, identifiers, and literal examples; inspect scanner candidates against the source before repair."
 metadata:
   agent_created: true
 ---
@@ -31,9 +31,11 @@ current chapter layout, counter model, OCR format, macros, and page mappings
 before applying them. Use bundled scripts by their actual `scripts/` paths.
 Project-specific helpers are optional, not implied dependencies.
 
-English in code and pseudocode is intentional. Preserve keywords, identifiers,
-literals, prompts, and expected outputs. Translate descriptive captions and safe
-comments only. Inspect rendered algorithm keywords; do not localize them through
+English syntax and identifiers in code and pseudocode are intentional. Preserve
+keywords, literals, prompts, and expected outputs. Translate captions, descriptions
+after input/output labels, natural-language steps and conditions, and safe comments
+inside algorithms. Do not exempt an entire pseudocode environment. Inspect rendered
+algorithm keywords; do not localize them through
 algorithm-package overrides. Residual-English scans are candidate generators,
 never instructions to eliminate all English. The main skill's
 `references/ai-code-fidelity.md` gives the shared AI/code rules.
@@ -50,6 +52,17 @@ section is wasted work, and none of the lexical scans below can see a missing pa
 
 ### F1. Section-count parity with the original ToC ← start here
 
+For a whole-work task, first inventory every source unit, including appendices,
+supplementary proofs, and front/back matter, from both the TOC and the actual body
+through the final page. Narrow the scope only when the user does so explicitly.
+Map source headings/page ranges to translated files/headings and record pending,
+translated, and source-reviewed status. For each unit inspect translated prose,
+proofs, footnotes, tables, and algorithms, not just the heading. An English source
+PDF attached after the translated body is untranslated content, even when it
+preserves all formulas; inspect `\includepdf` and other source-page imports.
+Bibliography titles may remain English under project policy, but appendix prose
+does not inherit that exception. Do not declare full completion with pending units.
+
 Count the translation's `\section{}` per chapter and compare with the original
 book's table of contents. **An entire section can be missing** and nothing else
 detects it: both PDFs look complete, the page count is plausible, and the
@@ -62,6 +75,11 @@ missing content were already sitting in five other chapters.**
 python section_parity.py <project_dir> [--expect "I=6,II=5,III=8,..."]
 #                                               ^ read the counts off the original ToC
 ```
+
+This helper defaults to `chapters/ch*.tex` and counts numbered sections. Set
+`--chapters-dir` and `--tex-glob` for the actual layout, and separately inspect
+appendix files, unnumbered headings, imported pages, and units absent from the TOC.
+Section counts alone cannot detect an untranslated English appendix body.
 
 ### F2. Bare (never-hyperlinked) cross-chapter references
 
@@ -231,7 +249,7 @@ A translation must not leave English theorem-like words in the body
 (Theorem / Lemma / Proof / Remark / Corollary / Proposition / Definition /
 Example / Exercise / Chapter / Section / Appendix). Scan with
 `scripts/residual_english_scan.py <dir>`. It **excludes** hits that are:
-- inside supported code, inline-code, or algorithm environments (custom wrappers still need review),
+- inside supported literal code or inline-code environments (custom wrappers still need review),
 - inside a `%` comment,
 - a `\bibitem` reference line or a `thebibliography` block,
 - inside an intentional `\erratum{…}` correction note
@@ -241,6 +259,12 @@ Example / Exercise / Chapter / Section / Appendix). Scan with
 - in a `_scratch`/`backup` copy.
 
 Any remaining hit is a candidate untranslated-prose location to inspect.
+Algorithms are not excluded wholesale: a separate heuristic reports descriptions
+and prose steps after masking math, TeX commands, and syntax keywords. Review
+`Input`/`Output` arguments, “Sample” steps, verbal conditions, and comments against
+the source; leave real API calls and identifiers intact. Short/custom prose can
+escape the heuristic, so inspect rendered algorithms even with zero candidates.
+Neither this scan nor section counts can prove that all source pages were translated.
 
 ### D. Digit / degree mistranslations (the reader's most common catch)
 Number-theory books hide degree/exponent errors. Spot-check the formula-heavy
@@ -351,7 +375,8 @@ A raw `$…$` extractor pulls in prose. Keep a cluster only if:
 8. `fraktur_audit.py <orig.md> <trans_dir>` → every high-count fraktur letter
    present in both; investigate any single-occurrence gap with `show_context.py`.
 9. `residual_english_scan.py <project_dir>` → review remaining prose candidates;
-   code/algorithms and intentional English are not translation defects.
+   code/pseudocode syntax and intentional English are not translation defects;
+   algorithm descriptions and prose steps still require translation.
 10. GREP the digit/degree hotspots (class D) for the *correct* forms.
 11. `extract_pdf_text.py` to anchor each chapter start; confirm opening text.
 12. `math_cluster_audit.py <orig.md> <trans_dir>` as a spot-check.

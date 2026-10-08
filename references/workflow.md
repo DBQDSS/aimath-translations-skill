@@ -21,6 +21,20 @@ Record gaps before translating. A source PDF without TeX may require careful
 transcription or OCR. TeX without the published PDF cannot support reliable
 visual comparison.
 
+Unless the user explicitly requests selected pages/chapters or a summary, the
+scope is the whole supplied work. Inventory front matter, all body sections,
+appendices (including lettered sections), supplementary proofs, acknowledgements,
+notes, bibliography, and indices. Inspect the body and final source pages even if
+the TOC or PDF bookmarks omit them. Use one row per coherent unit in a project log:
+
+| Source unit and heading | Source PDF pages (1-based) | Translation file/heading | Status | Comparison evidence or unresolved issue |
+|---|---|---|---|---|
+| Appendix A / source title | actual page range | actual destination | pending / translated / source-reviewed | source and rendered-page checks |
+
+Rows are a coverage map, not proof of completion. Do not mark a unit translated
+because its heading exists or the original pages were inserted. Distinguish physical
+PDF page numbers from printed page labels; translated page numbers may differ.
+
 ## 2. Choose Evidence Priority
 
 Use this default order for content when evidence conflicts:
@@ -45,13 +59,15 @@ Preserve local conventions unless they prevent a correct result.
 
 For a new project:
 
-- review the current resources linked from
-  <https://mathtranslations.org/guide/>;
+- read the bundled [local guide](../MathTranslations/guide.md); website links in
+  resource metadata record provenance and are not workflow prerequisites;
 - when using the MathTranslations template, read
-  [mathtranslations-template.md](mathtranslations-template.md), preserve an
+  [local template instructions](../MathTranslations/legacy-template.md), or the
+  [book-class profile](../MathTranslations/template-profile.md) for a supplied class; preserve an
   untouched copy, and compile the unchanged template as a baseline;
 - if the user did not supply template files, copy the skill's bundled
-  `assets/mathtranslations-translation-template.tex` and `assets/logo.pdf`
+  `MathTranslations/templates/legacy/mathtranslations-translation-template.tex`,
+  `MathTranslations/templates/legacy/logo.pdf`, and the accompanying MIT `LICENSE`
   into the project for the bundled legacy ctexart variant; the ctexbook variant
   needs a supplied `mathtranslation.cls`, which is not bundled;
 - otherwise choose a Unicode-capable Chinese TeX setup appropriate to the
@@ -63,9 +79,10 @@ For a new project:
 - create a minimal sample containing Chinese prose, formulas, theorem
   environments, references, citations, and one figure before scaling up.
 
-Do not vendor a remote terminology export without checking its license and
-version. The bundled MathTranslations template and logo are MIT-licensed;
-prefer a user-supplied newer template when available.
+The bundled resources are fixed local snapshots; do not fetch or refresh them
+during ordinary translation. Prefer a user-supplied template when available.
+If the user requests a resource refresh, check provenance, license, version, and
+compatibility before vendoring an export or replacing the authorized assets.
 
 The recommended extraction path is source PDF to MinerU or another parser,
 then Markdown as a working draft, followed by translation and LaTeX reassembly.
@@ -77,17 +94,20 @@ Create a project glossary with at least:
 
 | Source term | Preferred Chinese | Context or exception | Evidence |
 |---|---|---|---|
-| compact | 紧 | topology; not everyday "compact" | current glossary/textbook |
+| compact | 紧 | topology; not everyday "compact" | local reference/source definition |
 
-Use the current MathTranslations terminology page as one reference, then check
-the field's established Chinese literature and the local context. The project
-glossary wins only for deliberate, documented choices.
+Use [local terminology notes](../MathTranslations/terminology.md) and the
+[starter TSV](../MathTranslations/terminology.tsv), together with the source
+definitions and locally supplied references. The project glossary wins only for
+deliberate, documented choices. Missing or disputed entries do not require website
+access: retain the English term on introduction and record the uncertainty. Use
+online research only when explicitly requested.
 
 For a new or disputed term:
 
 1. identify its mathematical field and exact sense;
 2. inspect nearby definitions and usage;
-3. compare established Chinese sources;
+3. compare available local Chinese references and the supplied project glossary;
 4. choose one translation and record alternatives or exceptions;
 5. search the project for inconsistent variants.
 
@@ -162,6 +182,9 @@ keyword overrides: rendered `for`, `do`, `end for`, `Input`, and `Output` must
 retain the source language. Keep indentation, loop bounds, updates, algorithm line
 numbers, literal prompts, and expected outputs intact. Prose `enumerate` and
 MathTranslations punctuation rules do not apply to literal code or algorithm syntax.
+Translate descriptions after those labels, prose steps (e.g. “Sample”), verbal
+conditions, and explanatory comments inside the algorithm. These are human-language
+content, not protected syntax. Review both token fidelity and prose completeness.
 
 Preserve experimental values, metric direction, units, tensor shapes, model/dataset
 identifiers, and uncertainty qualifiers. Architecture diagrams and computational
@@ -177,8 +200,17 @@ verified.
 ### Front And Back Matter
 
 Translate title pages, prefaces, appendices, indices, acknowledgements, and
-license notices according to project scope. Keep legal and attribution text
-faithful.
+license explanations within the agreed scope. Appendices and supplementary proofs
+receive the same paragraph-by-paragraph translation and mathematical review as the
+main text; never skip them because they are technical, long, or placed after the
+bibliography. Preserve required legal notices and attribution verbatim when needed,
+with a clearly separated Chinese explanation. Bibliographic titles, names, and
+identifiers may follow the bibliography policy; this exception does not extend to
+appendix prose, headings, proofs, or footnotes.
+
+Do not substitute `\includepdf`, screenshots, source-English TeX, or an untranslated
+OCR dump for translated appendix content. A source facsimile may be an explicitly
+requested extra, separately labeled and excluded from completed translation coverage.
 
 For the MathTranslations cover, replace all sample metadata: Chinese and
 English titles, author, edition, publisher, year, translator, model, and update
@@ -206,3 +238,12 @@ A finished handoff should include the editable project, generated PDF when the
 toolchain permits, build instructions already present in the project, the
 project glossary, and a concise unresolved-issues list. Do not claim a complete
 PDF comparison when only source text or compilation logs were checked.
+
+Reconcile every coverage-map row with actual translated content and the rendered
+PDF, through the last source unit. Check appendix headings/bookmarks and their
+proofs, tables, algorithms, footnotes, and references. A whole-document delivery
+requires all in-scope units translated and source-reviewed. If resources prevent
+completion, checkpoint the project, retain pending rows and exact source ranges,
+and continue in further batches; report a partial translation until those rows are
+finished. Context/time pressure and compilation success do not authorize replacing
+remaining sections with English pages or redefining the requested scope.

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-10-08",
+  "network_required_for_use": false,
+  "update_policy": "Only refresh or research when explicitly requested; never download during ordinary translation.",
+  "guide": {
+    "local_file": "guide.md",
+    "upstream_url": "https://mathtranslations.org/guide/",
+    "checked_on": "2026-10-08",
+    "kind": "Concise local adaptation of existing MIT-licensed repository workflow; not a website mirror."
+  },
+  "template_profile": {
+    "local_file": "template-profile.md",
+    "origin": "Relocated from references/mathtranslations-template.md; inherited class-inspection notes.",
+    "applies_to": "User-supplied ctexbook mathtranslation.cls; no class file is bundled."
+  },
+  "legacy_template": {
+    "directory": "templates/legacy",
+    "origin": "Existing authorized assets/ copies; byte-identical.",
+    "inspected_on": "2026-08-23",
+    "archive_name": "mathtranslations-translation-template.zip",
+    "archive_sha256": "4C2E5AD1C81646B4E8AD53F4B5FD5BAA7D477C749915E32CF52B5EE71F85F12E",
+    "authorization": "Upstream NOTICE.md records MIT authorization for the template and logo.",
+    "latest_release_claim": false,
+    "files": [
+      {
+        "path": "templates/legacy/LICENSE",
+        "sha256": "0ece9f2e1417dd9d03c108b3d469d9931a1ba8be2ca9004bb2547ef8037a6454",
+        "bytes": 1113
+      },
+      {
+        "path": "templates/legacy/logo.pdf",
+        "sha256": "8b3839adbf870a8c5e825c9f004125816835bbb321617e619e5f589b672fc8d5",
+        "bytes": 13526
+      },
+      {
+        "path": "templates/legacy/mathtranslations-translation-template.tex",
+        "sha256": "b2cc106209969e77878f3ba6dfe0bf050d4d38da0c68e558a96241350827531e",
+        "bytes": 26370
+      }
+    ]
+  },
+  "terminology": {
+    "local_file": "terminology.tsv",
+    "instructions": "terminology.md",
+    "entries": 70,
+    "origin": "Local editorial starter glossary of mathematical and AI/ML senses.",
+    "community_database_export": false,
+    "community_consensus_claim": false,
+    "upstream_url": "https://mathtranslations.org/terminology/",
+    "checked_on": "2026-10-08",
+    "stable_export_url": "https://mathtranslations.org/terminology/download/stable/",
+    "full_export_url": "https://mathtranslations.org/terminology/download/",
+    "export_observation": "Both endpoints redirected to login. No database export was downloaded."
+  },
+  "license_note": "Repository-authored notes and existing authorized assets retain the root MIT License. Website/database licensing is not asserted."
+}

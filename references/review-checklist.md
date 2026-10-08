@@ -7,7 +7,8 @@ fluent Chinese while missing a mathematical or structural defect.
 
 - [ ] The Chinese is natural, concise, and suitable for mathematical writing.
 - [ ] No source sentence, heading, caption, footnote, or list item is omitted.
-- [ ] Terms match the project glossary and current authoritative usage.
+- [ ] Terms match the documented project glossary, source definitions, and
+  appropriate available local references; uncertain choices are recorded.
 - [ ] Pronouns and omitted subjects remain unambiguous.
 - [ ] Logical connectors retain their force.
 - [ ] Proper names, transliterations, acronyms, and capitalization are stable.
@@ -19,8 +20,11 @@ fluent Chinese while missing a mathematical or structural defect.
 - [ ] Translator additions are visibly distinguished from source content.
 - [ ] AI terminology follows source definitions; model, dataset, library, and
   metric identifiers retain their spelling and case.
-- [ ] English inside code, algorithms, literal examples, and intentional bilingual
+- [ ] English syntax/identifiers inside code and algorithms, literal examples, and intentional bilingual
   terms has not been "fixed" by residual-English cleanup.
+- [ ] Algorithm captions, descriptions after input/output labels, prose steps,
+  verbal conditions, and explanatory comments are translated, even within a
+  protected algorithm environment; API names and formulas remain exact.
 
 ## Pass 2: Mathematics And Structure
 
@@ -32,6 +36,11 @@ fluent Chinese while missing a mathematical or structural defect.
 - [ ] Theorem-like environment types and proof boundaries are preserved.
 - [ ] Section hierarchy, lists, examples, exercises, figures, and tables are
   complete and in the correct order.
+- [ ] The source coverage map includes front/back matter and every appendix,
+  including unbookmarked headings and material after the bibliography. Every
+  in-scope unit has actual translated content and source-review evidence.
+- [ ] No source-English page attachment, screenshot, unchanged TeX/OCR passage,
+  or translated appendix title stands in for translating its body and proofs.
 - [ ] Every commutative/morphism diagram is rebuilt with `tikzcd`;
   nodes, labels, directions, arrow styles, and commutativity match the source.
 - [ ] Other figures use faithful source assets or suitable redrawings; raster
@@ -43,7 +52,8 @@ fluent Chinese while missing a mathematical or structural defect.
 - [ ] Suspected source errors are recorded instead of silently altered.
 - [ ] Code/pseudocode keywords (including `for`, `do`, `end for`, `Input`, and
   `Output`), identifiers, literals, indentation, control flow, bounds, and
-  numbered lines match the source; only safe explanatory comments are translated.
+  numbered lines match the source; human-language descriptions and steps are
+  translated without changing the mathematical operations.
 - [ ] Literal prompts and expected outputs remain source data; API versions,
   hyperparameters, and examples have not been modernized.
 - [ ] AI formulas preserve tensor shapes, axes, conditioning, normalization,
@@ -92,9 +102,11 @@ fluent Chinese while missing a mathematical or structural defect.
 Record:
 
 - scope reviewed;
+- per-unit coverage, including appendix page ranges, and remaining pending units;
 - source edition and files used;
 - compilation command and result;
-- date or version of external terminology resources consulted;
+- version of local terminology/template resources used and any explicitly
+  requested external research;
 - unresolved ambiguities and known visual differences;
 - any intentional departure from the source.
 - code/algorithm review coverage and any embedded image text or custom

@@ -1,0 +1,71 @@
+source_term	chinese	sense	note
+compact	紧	topology	Do not use the everyday sense of compact.
+complete	完备	metric space	Distinguish completeness from compactness.
+connected	连通	topology	Distinguish path-connected.
+path-connected	道路连通	topology	Follow a deliberate project choice such as 路径连通 consistently.
+continuous	连续	analysis and topology	Preserve the source notion of continuity.
+uniformly continuous	一致连续	analysis	Do not omit the uniform qualifier.
+measurable	可测	measure theory	Keep the relevant sigma-algebras explicit.
+sigma-algebra	σ-代数	measure theory	Retain mathematical notation in LaTeX.
+measure	测度	measure theory	Not measurement or empirical evaluation.
+almost everywhere	几乎处处	measure theory	Preserve the underlying measure.
+almost surely	几乎必然	probability	Not merely with high probability.
+convergence in probability	依概率收敛	probability	Distinct from almost-sure convergence.
+weak convergence	弱收敛	probability or functional analysis	Check the source definition and ambient space.
+inner product	内积	linear algebra	Distinguish bilinear and sesquilinear conventions.
+norm	范数	linear algebra and analysis	Retain the exact norm type.
+operator norm	算子范数	linear algebra and analysis	Not the Frobenius norm.
+Frobenius norm	Frobenius 范数	matrix analysis	Preserve the proper name consistently.
+eigenvalue	特征值	linear algebra	Preserve multiplicities.
+eigenvector	特征向量	linear algebra	Preserve normalization assumptions.
+positive definite	正定	matrix analysis	Distinguish positive semidefinite.
+positive semidefinite	半正定	matrix analysis	Do not drop the semidefinite qualifier.
+convex	凸	convex analysis	Keep the object being described explicit.
+strongly convex	强凸	convex analysis	Retain its constant and convention.
+log-concave	对数凹	probability and convex analysis	Not log-convex.
+Lipschitz continuous	Lipschitz 连续	analysis	Retain the constant, norm, and local/global qualifier.
+gradient	梯度	calculus	Distinguish gradients from literal API names.
+Hessian	Hessian 矩阵	calculus	Retain the differentiation variables and axis order.
+expectation	期望	probability	Preserve conditioning and the distribution.
+conditional expectation	条件期望	probability	Retain the conditioning sigma-algebra or variable.
+variance	方差	probability	Distinguish standard deviation.
+covariance	协方差	probability	Preserve scalar/matrix distinctions.
+probability density	概率密度	probability	Do not replace density with probability mass.
+likelihood	似然	statistics	Not probability as a generic concept.
+log-likelihood	对数似然	statistics	Preserve normalization and sign.
+estimator	估计量	statistics	Distinguish an estimator from its realized estimate.
+estimate	估计值	statistics	Choose the verbal translation 估计 when used as a verb.
+unbiased estimator	无偏估计量	statistics	Preserve the distribution defining unbiasedness.
+independent and identically distributed	独立同分布	probability	Both independence and identical distribution matter.
+proposal distribution	提议分布	Monte Carlo sampling	Use a documented project alternative consistently.
+rejection sampling	拒绝采样	Monte Carlo sampling	Translate prose steps, not syntax keywords.
+importance sampling	重要性采样	Monte Carlo sampling	Preserve the weight normalization convention.
+Markov chain	马尔可夫链	probability	Keep discrete/continuous time distinctions.
+transition kernel	转移核	probability	Preserve conditional argument order.
+stationary distribution	平稳分布	Markov processes	Distinguish a stationary process from a distribution.
+mixing time	混合时间	Markov chains	Retain the metric and tolerance.
+total variation distance	总变差距离	probability	Preserve the source factor convention.
+relative entropy	相对熵	information theory	Preserve argument order; note relation to KL divergence.
+score	得分	gradient of log density	Confirm the source definition; not an evaluation score.
+score function	得分函数	statistics and diffusion models	Record the differentiation variable from the source.
+score	评分	evaluation metric	This sense differs from the gradient of log density.
+diffusion model	扩散模型	generative modeling	Preserve the source process and time convention.
+denoising	去噪	generative modeling	Preserve the source estimator and noise level.
+forward process	前向过程	diffusion models	Keep source direction and time indexing.
+reverse process	反向过程	diffusion models	Not necessarily an exact reverse-time kernel.
+training	训练	machine learning	Distinguish evaluation and inference.
+inference	推断	statistical inference	Not automatically prediction.
+inference	推理	model execution	Follow source context and project terminology.
+prediction	预测	machine learning	Distinguish inference when the source does.
+loss function	损失函数	machine learning	Preserve minimization/maximization and signs.
+objective function	目标函数	optimization	Do not equate with loss without source support.
+regularization	正则化	statistics and optimization	Distinguish matrix regularization and numerical stabilization.
+hyperparameter	超参数	machine learning	Retain source values and schedules.
+batch size	批量大小	machine learning	Distinguish batches from individual samples.
+learning rate	学习率	optimization	Retain the update schedule.
+step size	步长	numerical methods and sampling	Do not assume it is a training learning rate.
+attention mechanism	注意力机制	neural networks	Retain axes, masks, and normalization.
+embedding	嵌入	learned representation	Confirm whether the source instead uses a mathematical embedding.
+embedding	嵌入	topology or geometry	Preserve the precise mathematical definition.
+benchmark	基准测试	empirical evaluation	Preserve a named benchmark's identifier.
+ablation study	消融实验	machine learning	Preserve the removed component and comparison conditions.

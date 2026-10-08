@@ -173,7 +173,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def is_excluded(path: Path) -> bool:
-    return any(part.lower() in EXCLUDED_DIRS for part in path.parts)
+    parts = tuple(part.lower() for part in path.parts)
+    # Bundled template masters are reference assets, not translated project text.
+    resource_path = ("mathtranslations", "templates", "legacy")
+    return (any(part in EXCLUDED_DIRS for part in parts)
+            or any(parts[i:i + len(resource_path)] == resource_path
+                   for i in range(len(parts) - len(resource_path) + 1)))
 
 
 def collect_files(root: Path, suffix: str) -> list[Path]:

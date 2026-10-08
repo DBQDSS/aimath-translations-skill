@@ -1,0 +1,782 @@
+% !TeX program = xelatex
+% 数译（mathtranslations.org）数学中文译本排版模板
+% 建议使用 XeLaTeX 连续编译两次，以生成目录、交叉引用、双向链接与术语索引页码.
+%
+% 文件依赖：logo.pdf
+%
+% 模板约定：
+% 1. 正文中文使用宋体，专用术语首次定义时使用楷体，定理、定义、命题、推论、引理、注使用仿宋.
+% 2. 英文正文使用有衬线 Computer Modern Unicode（CMU Serif）.
+% 3. 新概念首次出现统一使用 \newterm{键}{中文术语}{English term}，显示为“楷体中文术语（English term）”，并自动加入术语索引.
+% 4. 同一术语后续再次出现时直接正常书写中文，不必重复楷体，也不必重复英文原词.
+% 5. 文档最后调用 \printterminology，自动列出中文术语、英文术语与第一次出现的页码.
+% 6. 只有“注”和“例”环境以 \diamond 标志结束；proof 仍以 \square 结束.
+% 7. 排版文字除句末使用英文句点“.”外，其余标点统一使用中文标点.
+% 8. 过长证明建议移至所在小节末、习题之前的 longproof 环境，并用 \longprooflink 建立双向链接.
+% 9. 行间公式统一使用 align、aligned 或 align* 环境，不要出现多个 \[ \] 并列的情形.
+% 10. 有序列表一律使用 enumerate 环境，不要手动编号.
+% 11. 中文引号统一写作 TeX 引号：前引号 ``、后引号 ''，例如 ``正规子群''；不要使用中文全角引号.
+
+\documentclass[UTF8,12pt,fontset=none]{ctexart}
+
+% ---------- 页面、字体与数学 ----------
+\usepackage[paper=a4paper,left=2.5cm,right=2.5cm,top=2.8cm,bottom=2.8cm]{geometry}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\usepackage{amsmath,amsthm,amssymb,mathrsfs,mathtools}
+\usepackage{graphicx,tikz,tikz-cd,titlesec}
+\usepackage{array,booktabs,longtable}
+\usepackage{etoolbox}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[
+    colorlinks=true,
+    bookmarksnumbered=true,
+    linkcolor=MidnightBlue,
+    citecolor=BrickRed, % 文献引用使用砖红色，与普通交叉引用区分
+    urlcolor=MidnightBlue,
+    linktoc=all
+]{hyperref}
+
+% 英文：Computer Modern Unicode Serif
+\setmainfont{cmunrm.otf}[
+  BoldFont=cmunbx.otf,
+  ItalicFont=cmunti.otf,
+  BoldItalicFont=cmunbi.otf
+]
+
+% 中文：正文宋体；专用术语楷体；定理类环境仿宋
+% 使用 TeX Live 自带 Fandol，避免依赖 macOS / Windows 专有字体.
+\setCJKmainfont{FandolSong-Regular.otf}[BoldFont=FandolSong-Bold.otf]
+\newCJKfontfamily\songfont{FandolSong-Regular.otf}[BoldFont=FandolSong-Bold.otf]
+\newCJKfontfamily\termfont{FandolKai-Regular.otf}
+\newCJKfontfamily\theoremfont[AutoFakeBold=2]{FandolFang-Regular.otf}
+\setCJKsansfont{FandolHei-Regular.otf}[BoldFont=FandolHei-Bold.otf]
+\setCJKmonofont{FandolFang-Regular.otf}
+
+\pagestyle{plain}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0pt}
+\linespread{1.16}
+
+% ---------- 译本元信息：实际使用时只需修改这里 ----------
+% 封面标题：中文译名 + 原书名
+% 右下角只显示：版次 · 出版社 · 年份 / 译者 翻译及重排 / 使用模型 / 更新时间
+\newcommand{\BookTitleCN}{代数学}
+\newcommand{\BookTitleEN}{Algebra}
+\newcommand{\OriginalAuthor}{Serge Lang}
+\newcommand{\OriginalEdition}{3rd edition}
+\newcommand{\OriginalPublisher}{Springer}
+\newcommand{\OriginalYear}{2002}
+\newcommand{\Translator}{数译}
+\newcommand{\ModelUsed}{GPT-5.6 Sol}
+\newcommand{\TranslationDate}{17 Aug 2026}
+
+% ================================================================
+%                         术语系统
+% ================================================================
+% \newterm{唯一键}{中文术语}{英文术语}
+% 用于“新概念第一次出现”的位置.
+% 示例：\newterm{scheme}{概型}{scheme}
+% 输出：楷体“概型”（scheme）
+% 同时自动记录术语索引中的中文、英文与第一次出现页码.
+%
+% 后续再出现“概型”时，直接正常输入“概型”即可，不要再次调用 \newterm.
+% \termcn{...} 仅用于少数确有必要的术语强调，不自动进入索引.
+
+\newcommand{\termcn}[1]{{\termfont #1}}
+
+\makeatletter
+\newcommand{\MTTermList}{}
+\newcommand{\MTRegisterTerm}[3]{%
+  \g@addto@macro\MTTermList{\MTTermRow{#1}{#2}{#3}}%
+}
+\newcommand{\MTTermRow}[3]{%
+  {\termfont #1} & #2 & \hyperref[#3]{\pageref*{#3}} \\
+}
+
+\newcommand{\newterm}[3]{%
+  \@ifundefined{MT@seen@#1}{%
+    \expandafter\gdef\csname MT@seen@#1\endcsname{}%
+    \phantomsection
+    \label{term:#1}%
+    \protected@write\@auxout{}{%
+      \string\MTRegisterTerm{\unexpanded{#2}}{\unexpanded{#3}}{term:#1}%
+    }%
+  }{}%
+  {\termfont #2}（#3）%
+}
+\makeatother
+
+% 文末自动生成术语索引.
+% 表中顺序就是术语在正文中第一次出现的顺序.
+\newcommand{\printterminology}{%
+  \clearpage
+  \phantomsection
+  \section*{术语索引}
+  \addcontentsline{toc}{section}{术语索引}
+
+  \vspace{0.5cm}
+  \begingroup
+  \renewcommand{\arraystretch}{1.28}
+  \begin{longtable}{>{\raggedright\arraybackslash}p{0.28\textwidth}>{\raggedright\arraybackslash}p{0.49\textwidth}>{\centering\arraybackslash}p{0.12\textwidth}}
+    \toprule
+    \textbf{中文术语} & \textbf{英文术语} & \textbf{页码} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{中文术语} & \textbf{英文术语} & \textbf{页码} \\
+    \midrule
+    \endhead
+    \MTTermList
+    \bottomrule
+  \end{longtable}
+  \endgroup
+}
+
+% ================================================================
+%                       定理类环境
+% ================================================================
+% 定义、引理、定理、推论、命题、注：仿宋正文
+% 例、问题：宋体正文
+% 环境标题后使用中文冒号，不使用英文句点.
+
+\newtheoremstyle{mtfang}%
+  {6pt}{6pt}% 上下间距
+  {\theoremfont}% 正文字体
+  {0pt}% 缩进
+  {\songfont\bfseries}% 标题字体统一为宋体粗体，与“例”“证明”一致
+  {：}% 标题后的中文标点
+  {0.5em}% 标题与正文间距
+  {}%
+
+\newtheoremstyle{mtsong}%
+  {6pt}{6pt}%
+  {\songfont}%
+  {0pt}%
+  {\songfont\bfseries}%
+  {：}%
+  {0.5em}%
+  {}%
+
+\theoremstyle{mtfang}
+\newtheorem{definition}{定义}[subsection]
+\newtheorem{lemma}{引理}[subsection]
+\newtheorem{theorem}{定理}[subsection]
+\newtheorem{corollary}{推论}[subsection]
+\newtheorem{proposition}{命题}[subsection]
+\newtheorem{remark}{注}[subsection]
+
+\theoremstyle{mtsong}
+\newtheorem{example}{例}[subsection]
+\newtheorem{problem}{问题}[subsection]
+
+% autoref 名称
+\providecommand{\definitionautorefname}{定义}
+\renewcommand{\definitionautorefname}{定义}
+\providecommand{\lemmaautorefname}{引理}
+\renewcommand{\lemmaautorefname}{引理}
+\providecommand{\theoremautorefname}{定理}
+\renewcommand{\theoremautorefname}{定理}
+\providecommand{\corollaryautorefname}{推论}
+\renewcommand{\corollaryautorefname}{推论}
+\providecommand{\propositionautorefname}{命题}
+\renewcommand{\propositionautorefname}{命题}
+\providecommand{\exampleautorefname}{例}
+\renewcommand{\exampleautorefname}{例}
+\providecommand{\remarkautorefname}{注}
+\renewcommand{\remarkautorefname}{注}
+\providecommand{\problemautorefname}{问题}
+\renewcommand{\problemautorefname}{问题}
+\providecommand{\exerciseautorefname}{习题}
+\renewcommand{\exerciseautorefname}{习题}
+
+% 只有“例”和“注”以菱形表示环境结束.
+\newcommand{\envenddiamond}{%
+  \ifhmode
+    \unskip\nobreak\hfill\ensuremath{\diamond}%
+  \else
+    \noindent\hfill\ensuremath{\diamond}%
+  \fi
+  \par
+}
+\AtEndEnvironment{example}{\envenddiamond}
+\AtEndEnvironment{remark}{\envenddiamond}
+
+% ---------- proof 样式：宋体正文，以方块结束 ----------
+\makeatletter
+\renewcommand{\proofname}{证明}
+\renewenvironment{proof}[1][\proofname]{\par
+  \pushQED{\qed}%
+  \normalfont\songfont
+  \topsep6\p@\@plus6\p@\relax
+  \trivlist
+  \item[\hskip\labelsep\normalfont\songfont\bfseries #1：]\ignorespaces
+}{%
+  \popQED\endtrivlist\@endpefalse
+}
+\makeatother
+\renewcommand{\qedsymbol}{\ensuremath{\square}}
+
+% ================================================================
+%                     长证明双向链接
+% ================================================================
+% 正文：\longprooflink{唯一键}{按钮文字}
+% 小节末、习题前：\begin{longproof}{唯一键}{所证明结果的名称} ... \end{longproof}
+
+\newcommand{\longprooflink}[2]{%
+  \par\smallskip
+  \hypertarget{longproof-source:#1}{}%
+  \begin{flushright}
+    \fbox{\hyperref[longproof:#1]{\textcolor{MidnightBlue}{#2（第~\pageref*{longproof:#1}~页）}}}%
+  \end{flushright}
+  \smallskip
+}
+
+\newenvironment{longproof}[2]{%
+  \def\CurrentLongProofKey{#1}%
+  \phantomsection
+  \hypertarget{longproof:#1}{}%
+  \label{longproof:#1}%
+  \begin{proof}[证明（#2）]
+}{%
+  \end{proof}
+  \begin{flushright}
+    \fbox{\hyperlink{longproof-source:\CurrentLongProofKey}{\textcolor{MidnightBlue}{返回原处}}}%
+  \end{flushright}
+  \medskip
+}
+
+% ================================================================
+%                   Chapter 风格的 section
+% ================================================================
+\newlength{\chapterNumSpace}
+\setlength{\chapterNumSpace}{1.4cm}
+\newif\ifInAppendix
+\InAppendixfalse
+\newif\ifInAppendixToc
+\InAppendixTocfalse
+
+\newlength{\tocSectionLabelWidth}
+\setlength{\tocSectionLabelWidth}{4.2em}
+\newlength{\tocAppendixGap}
+\setlength{\tocAppendixGap}{0.2em}
+\newlength{\tocSubIndent}
+\setlength{\tocSubIndent}{1.2em}
+\newlength{\tocSubNumWidth}
+\setlength{\tocSubNumWidth}{3.0em}
+
+\newcommand{\TocSectionNumber}[1]{%
+  \ifInAppendixToc
+    附录\hspace{\tocAppendixGap}#1%
+  \else
+    第~#1~章%
+  \fi
+}
+
+\makeatletter
+\renewcommand*\l@section[2]{%
+  \ifnum\c@tocdepth>\z@
+    \addvspace{0.55em}%
+    \begingroup
+      \parindent\z@
+      \rightskip\@pnumwidth
+      \parfillskip-\@pnumwidth
+      \leavevmode
+      \bfseries
+      \setlength{\@tempdima}{\tocSectionLabelWidth}%
+      \advance\leftskip\@tempdima
+      \hskip-\leftskip
+      \def\numberline##1{\makebox[\@tempdima][l]{\TocSectionNumber{##1}}}%
+      #1\nobreak\hfill\nobreak\makebox[\@pnumwidth][r]{#2}\par
+    \endgroup
+  \fi
+}
+\renewcommand*\l@subsection{\@dottedtocline{2}{\tocSubIndent}{\tocSubNumWidth}}
+\makeatother
+
+\let\OriginalAppendix\appendix
+\renewcommand{\appendix}{%
+  \OriginalAppendix
+  \InAppendixtrue
+  \addtocontents{toc}{\protect\InAppendixToctrue}%
+}
+
+\newcommand{\ChapterSectionLabel}{%
+  \thispagestyle{plain}%
+  \vspace*{-0.5cm}%
+  \makebox[\textwidth][r]{%
+    {\fontsize{18pt}{18pt}\selectfont\scshape
+      \ifInAppendix Appendix\else Chapter\fi
+    }\enspace
+    {\fontsize{62pt}{62pt}\selectfont\bfseries\thesection}%
+  }%
+  \par\vspace{-0.25cm}%
+  \noindent\rule{\dimexpr\textwidth-\chapterNumSpace\relax}{0.45pt}%
+}
+
+\titleformat{\section}[display]
+  {\normalfont}
+  {\ChapterSectionLabel}
+  {0cm}
+  {\raggedleft\rightskip=\chapterNumSpace\fontsize{30pt}{35pt}\selectfont\bfseries}
+  [\vspace{0.3cm}]
+
+\newcommand{\sectionbreak}{\clearpage}
+
+\titleformat{name=\section,numberless}[block]
+  {\normalfont\Large\bfseries\centering}
+  {}
+  {0pt}
+  {}
+
+\titlespacing{\section}{0pt}{0pt}{0pt}
+\ctexset{subsection={format=\large\bfseries}}
+
+% ================================================================
+%                     习题与答案双向链接
+% ================================================================
+\newcounter{exercise}[subsection]
+\renewcommand{\theexercise}{\thesubsection.\arabic{exercise}}
+\providecommand{\theHexercise}{\theexercise}
+\newlength{\exerciseLabelWidth}
+\newlength{\answerLabelWidth}
+\newcounter{answeritem}
+
+\makeatletter
+\newcommand{\maybehyperref}[2]{\@ifundefined{r@#1}{#2}{\hyperref[#1]{#2}}}
+
+\newcommand{\exercise@item}{%
+  \par\smallskip
+  \refstepcounter{exercise}%
+  \edef\exercise@number{\theexercise}%
+  \edef\exercise@label{exe:\exercise@number}%
+  \edef\exercise@answerlabel{ans:\exercise@number}%
+  \expandafter\label\expandafter{\exercise@label}%
+  \settowidth{\exerciseLabelWidth}{\textbf{\theexercise.}\enspace}%
+  \hangindent=\exerciseLabelWidth
+  \hangafter=1
+  \noindent
+  \maybehyperref{\exercise@answerlabel}{\textbf{\theexercise.}}\enspace
+  \ignorespaces
+}
+
+\newenvironment{exercises}{%
+  \par\medskip
+  \noindent{\large\bfseries 习题}\par\smallskip
+  \begingroup
+  \setlength{\parindent}{0pt}
+  \renewcommand{\item}{\exercise@item}%
+}{%
+  \par\endgroup\medskip
+}
+
+\newcommand{\answer@item}{%
+  \par\smallskip
+  \stepcounter{answeritem}%
+  \edef\answer@number{\answer@prefix.\arabic{answeritem}}%
+  \edef\answer@label{ans:\answer@number}%
+  \edef\answer@exerciselabel{exe:\answer@number}%
+  \phantomsection
+  \protected@edef\@currentlabel{\answer@number}%
+  \expandafter\label\expandafter{\answer@label}%
+  \settowidth{\answerLabelWidth}{\textbf{\answer@number.}\enspace}%
+  \hangindent=\answerLabelWidth
+  \hangafter=1
+  \noindent
+  \maybehyperref{\answer@exerciselabel}{\textbf{\answer@number.}}\enspace
+  \ignorespaces
+}
+
+\newenvironment{answers}[1]{%
+  \par\medskip
+  \def\answer@prefix{#1}%
+  \setcounter{answeritem}{0}%
+  \begingroup
+  \setlength{\parindent}{0pt}
+  \renewcommand{\item}{\answer@item}%
+}{%
+  \par\endgroup\medskip
+}
+\makeatother
+
+% ---------- 参考文献环境 ----------
+\newenvironment{mybibliography}[1]{%
+  \begingroup
+  \renewcommand{\section}[2]{}%
+  \begin{thebibliography}{#1}%
+}{%
+  \end{thebibliography}%
+  \endgroup
+}
+
+% ================================================================
+%                    模板完整用法示例
+% ================================================================
+% 下面逐一展示本模板的全部主要功能.
+% 实际翻译时，可以删除示例正文，只保留需要的结构和环境.
+
+
+\begin{document}
+
+% ================================================================
+%                             封面
+% ================================================================
+\begin{titlepage}
+    \thispagestyle{empty}
+    \flushleft
+
+    \rule{\textwidth}{1.2pt} \\[0.1cm]
+    \rule{\textwidth}{0.8pt} \\[1.5cm]
+
+    \hspace{2cm} {\fontsize{45pt}{60pt}\selectfont \bfseries \BookTitleCN} \\[0.8cm]
+    \hspace{2cm} {\fontsize{25pt}{30pt}\selectfont \textit{\BookTitleEN}} \\[1.5cm]
+
+    \rule{\textwidth}{0.6pt} \\[2cm]
+
+    \hspace{2cm} {\Huge \textsc{\OriginalAuthor}} \\[6cm]
+
+    \vfill
+
+    \noindent
+    \begin{minipage}[b]{0.46\textwidth}
+        \raggedright
+        \includegraphics[width=5.7cm]{logo.pdf}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.50\textwidth}
+        \raggedleft
+        {\small \OriginalEdition · \OriginalPublisher · \OriginalYear} \\[0.25cm]
+        {\normalsize \Translator\ 翻译及重排} \\[0.25cm]
+        {\small Model: \ModelUsed} \\
+        {\small Updated: \TranslationDate}
+    \end{minipage}
+
+    \vspace*{1cm}
+\end{titlepage}
+
+% ================================================================
+%                       译者说明与目录
+% ================================================================
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\phantomsection
+\section*{译者说明}
+\addcontentsline{toc}{section}{译者说明}
+
+本文件是一份排版示例，正文选取群论中最基本的一段内容，用来展示术语、定理环境、交叉引用、行间公式、有序列表、长证明、习题与术语索引等功能.
+正式翻译时，可以在这里说明所依据的原书版次、翻译与重排原则、模型的使用方式，以及与原书章节、公式或页码之间需要保留的对应关系.
+
+排版基本流程如下：
+\begin{enumerate}
+    \item 以原书为最高依据完成翻译；
+    \item 按本模板完成 LaTeX 排版与交叉引用；
+    \item 编译通过后进行数学、术语与排版三轮检查.
+\end{enumerate}
+
+排版细则：行间公式统一使用 align、aligned 或 align* 环境，不要出现多个 \[ \] 并列的情形；有序列表一律使用 enumerate；中文双引号的前引号写作 ``，后引号写作 ''，例如 ``正规子群''.
+
+\vspace{0.5cm}
+\hfill \Translator
+
+\hfill \TranslationDate
+
+\newpage
+\begingroup
+\pagestyle{empty}
+\thispagestyle{empty}
+\tableofcontents
+\clearpage
+\endgroup
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% ================================================================
+%                    section / subsection
+% ================================================================
+\section{群与同态}
+\subsection{子群与正规子群}
+
+% 新概念第一次出现时使用：
+% \newterm{唯一键}{中文术语}{English term}
+% 后续再次出现时直接写中文，不再重复楷体和英文.
+
+设 \(G\) 是一个群.
+我们常常希望从 \(G\) 中取出一部分元素，并要求它们在原来的运算下仍然组成一个群.
+
+\begin{definition}\label{def:subgroup}
+若非空子集 \(H\subseteq G\) 在 \(G\) 的运算下本身构成一个群，则称 \(H\) 为 \(G\) 的 \newterm{subgroup}{子群}{subgroup}，记作 \(H\leq G\).
+\end{definition}
+
+判断一个非空子集是不是子群时，并不需要逐条检查所有群公理.
+
+\begin{lemma}\label{lem:subgroup-test}
+设 \(H\) 是 \(G\) 的非空子集.
+若对任意 \(x,y\in H\) 都有 \(xy^{-1}\in H\)，则 \(H\leq G\).
+\end{lemma}
+
+\begin{proof}
+取 \(x\in H\).
+令 \(y=x\)，则 \(e=xx^{-1}\in H\).
+再令 \(x=e\)，可得 \(y^{-1}\in H\).
+最后，对任意 \(x,y\in H\)，由于 \(y^{-1}\in H\)，应用假设得到 \(x(y^{-1})^{-1}=xy\in H\).
+因此 \(H\) 在乘法与取逆下封闭，从而是 \(G\) 的子群.
+\end{proof}
+
+有些子群与整个群的乘法结构特别相容，这些子群正是构造商群所需要的对象.
+
+\begin{definition}\label{def:normal-subgroup}
+若子群 \(N\leq G\) 满足对任意 \(g\in G\) 都有 \(gNg^{-1}=N\)，则称 \(N\) 为 \(G\) 的 \newterm{normal-subgroup}{正规子群}{normal subgroup}，记作 \(N\trianglelefteq G\).
+\end{definition}
+
+\begin{example}\label{ex:abelian-normal}
+若 \(G\) 是交换群，则 \(G\) 的每个子群都是正规子群.
+事实上，对任意 \(g\in G\) 与 \(n\in N\)，都有 \(gng^{-1}=n\).
+\end{example}
+
+\begin{remark}\label{rem:normal}
+子群是否正规依赖于它嵌入整个群的方式.
+同一个抽象群可以在某个群中作为正规子群出现，也可以在另一个群中作为非正规子群出现.
+\end{remark}
+
+% 习题直接放在本小节末尾，不单独建立“习题”小节.
+\begin{exercises}
+    \item 证明任意群 \(G\) 的中心 \(Z(G)\) 都是正规子群.
+    \item 设 \(H,K\leq G\)，证明 \(H\cap K\leq G\).
+\end{exercises}
+
+% ================================================================
+%                     商群与群同态
+% ================================================================
+\subsection{商群与群同态}
+
+正规子群允许我们把同一个陪集中的元素视为同一个对象.
+
+\begin{definition}\label{def:quotient-group}
+若 \(N\trianglelefteq G\)，则所有陪集
+\begin{align*}
+    G/N=\{gN\mid g\in G\}
+\end{align*}
+在乘法 \((gN)(hN)=ghN\) 下构成的群称为 \newterm{quotient-group}{商群}{quotient group}.
+\end{definition}
+
+接下来考虑两个群之间保持运算的映射.
+
+\begin{definition}\label{def:homomorphism}
+设 \(G\) 与 \(H\) 是群.
+若映射 \(\varphi:G\to H\) 满足
+\begin{align*}
+    \varphi(xy)=\varphi(x)\varphi(y)
+\end{align*}
+对所有 \(x,y\in G\) 都成立，则称 \(\varphi\) 为 \newterm{homomorphism}{群同态}{group homomorphism}.
+\end{definition}
+
+与一个群同态相伴的两个基本对象，是被送到单位元的元素和真正被映到的元素.
+
+\begin{definition}\label{def:kernel-image}
+群同态 \(\varphi:G\to H\) 的 \newterm{kernel}{核}{kernel} 与 \newterm{image}{像}{image} 分别定义为
+\begin{align}
+    \ker\varphi&=\{g\in G\mid \varphi(g)=e_H\},
+    &
+    \operatorname{im}\varphi&=\{\varphi(g)\mid g\in G\}.
+    \label{eq:kernel-image}
+\end{align}
+\end{definition}
+
+核不仅记录同态把哪些元素压成了单位元（见式~\eqref{eq:kernel-image}），它还精确描述了同态在定义域中丢失的信息.
+
+\begin{proposition}\label{prop:kernel-normal}
+对任意群同态 \(\varphi:G\to H\)，都有 \(\ker\varphi\trianglelefteq G\).
+\end{proposition}
+
+\begin{proof}
+取 \(x\in\ker\varphi\) 与 \(g\in G\).
+则
+\begin{align*}
+    \varphi(gxg^{-1})
+    =\varphi(g)\varphi(x)\varphi(g)^{-1}
+    =e_H.
+\end{align*}
+因此 \(gxg^{-1}\in\ker\varphi\)，所以 \(\ker\varphi\) 是正规子群.
+\end{proof}
+
+\begin{theorem}\label{thm:first-iso}
+设 \(\varphi:G\to H\) 是群同态.
+则存在自然同构
+\begin{align*}
+    G/\ker\varphi\cong\operatorname{im}\varphi.
+\end{align*}
+\end{theorem}
+
+这个结论通常称为群的第一同构定理，关于这一基本结果也可参见 \cite{lang}.
+它说明任何群同态都可以分解为先取商，再把所得商群同构到像上.
+完整证明放在本小节末、习题之前，以展示较长证明的双向跳转方式.
+
+\longprooflink{first-iso-proof}{查看完整证明}
+
+\begin{corollary}\label{cor:injective-kernel}
+群同态 \(\varphi:G\to H\) 是单射，当且仅当 \(\ker\varphi=\{e_G\}\).
+\end{corollary}
+
+\begin{proof}
+由 \autoref{thm:first-iso}，商群 \(G/\ker\varphi\) 与 \(\operatorname{im}\varphi\) 同构.
+因此 \(\varphi\) 不识别任何两个不同元素，当且仅当核中只有单位元.
+\end{proof}
+
+% ================================================================
+%                        交换图
+% ================================================================
+第一同构定理也可以用交换图表示：
+\[
+\begin{tikzcd}
+G \arrow[r,"\varphi"] \arrow[d,"\pi"'] &
+\operatorname{im}\varphi \\
+G/\ker\varphi \arrow[ur,"\overline{\varphi}"',"\sim"]
+\end{tikzcd}
+\]
+其中 \(\pi\) 是自然投影，而 \(\overline{\varphi}\) 是定理给出的同构.
+
+% ================================================================
+%                         例与问题
+% ================================================================
+\begin{example}\label{ex:modn}
+考虑群同态
+\begin{align*}
+    \varphi:\mathbb Z&\longrightarrow\mathbb Z/n\mathbb Z,\\
+    m&\longmapsto\overline m.
+\end{align*}
+它的核是 \(n\mathbb Z\)，像是整个 \(\mathbb Z/n\mathbb Z\).
+因此 \autoref{thm:first-iso} 给出
+\begin{align*}
+    \mathbb Z/n\mathbb Z\cong \operatorname{im}\varphi.
+\end{align*}
+\end{example}
+
+\begin{problem}\label{prob:sign}
+设
+\begin{align*}
+    \operatorname{sgn}:S_n\longrightarrow\{\pm1\}
+\end{align*}
+为符号同态.
+求它的核，并利用 \autoref{thm:first-iso} 描述对应的商群.
+\end{problem}
+
+
+% 较长证明放在本小节末、习题之前.
+\begin{longproof}{first-iso-proof}{\autoref{thm:first-iso}}
+由 \autoref{prop:kernel-normal}，\(\ker\varphi\trianglelefteq G\)，所以商群 \(G/\ker\varphi\) 有定义.
+定义
+\begin{align*}
+    \overline{\varphi}:G/\ker\varphi&\longrightarrow\operatorname{im}\varphi,\\
+    g\ker\varphi&\longmapsto\varphi(g).
+\end{align*}
+
+首先验证这个映射定义良好.
+若
+\begin{align*}
+    g\ker\varphi=h\ker\varphi,
+\end{align*}
+则 \(h^{-1}g\in\ker\varphi\)，从而
+\begin{align*}
+    \varphi(h)^{-1}\varphi(g)
+    =\varphi(h^{-1}g)
+    =e_H.
+\end{align*}
+因此 \(\varphi(g)=\varphi(h)\)，所以 \(\overline{\varphi}\) 与陪集代表元的选择无关.
+
+其次，\(\overline{\varphi}\) 是群同态，因为
+\begin{align*}
+    \overline{\varphi}\bigl((g\ker\varphi)(h\ker\varphi)\bigr)
+    =\varphi(gh)
+    =\varphi(g)\varphi(h).
+\end{align*}
+
+它显然是满射，因为 \(\operatorname{im}\varphi\) 中的每个元素都具有形式 \(\varphi(g)\).
+
+最后验证单射.
+若
+\begin{align*}
+    \overline{\varphi}(g\ker\varphi)=e_H,
+\end{align*}
+则 \(\varphi(g)=e_H\)，故 \(g\in\ker\varphi\).
+于是 \(g\ker\varphi=\ker\varphi\)，所以 \(\overline{\varphi}\) 的核只有单位陪集.
+
+因此 \(\overline{\varphi}\) 是同构，从而
+\begin{align*}
+    G/\ker\varphi\cong\operatorname{im}\varphi.
+\end{align*}
+\end{longproof}
+
+% 本小节的习题紧接在正文与长证明之后.
+\begin{exercises}
+    \item 设 \(\varphi:G\to H\) 为群同态，证明 \(\operatorname{im}\varphi\leq H\).
+    \item 设 \(N\trianglelefteq G\)，证明自然投影 \(G\to G/N\) 的核恰好是 \(N\).
+    \item 设 \(\operatorname{sgn}:S_n\to\{\pm1\}\) 为符号同态，求它的核.
+\end{exercises}
+
+% ================================================================
+%                         附录与答案
+% ================================================================
+\clearpage
+\appendix
+
+\section{参考答案}
+
+\subsection*{1.1 子群与正规子群}
+
+\begin{answers}{1.1}
+    \item
+    若 \(z\in Z(G)\) 与 \(g\in G\)，则 \(gzg^{-1}=z\in Z(G)\).
+    因此 \(Z(G)\trianglelefteq G\).
+
+    \item
+    \(H\cap K\) 非空，因为 \(e\in H\cap K\).
+    若 \(x,y\in H\cap K\)，则 \(xy^{-1}\in H\) 且 \(xy^{-1}\in K\)，所以 \(xy^{-1}\in H\cap K\).
+    由 \autoref{lem:subgroup-test}，\(H\cap K\leq G\).
+\end{answers}
+
+\subsection*{1.2 商群与群同态}
+
+\begin{answers}{1.2}
+    \item
+    单位元属于像.
+    若 \(a=\varphi(x)\) 与 \(b=\varphi(y)\) 属于像，则
+    \begin{align*}
+        ab^{-1}=\varphi(xy^{-1})
+    \end{align*}
+    仍属于像.
+    由 \autoref{lem:subgroup-test}，\(\operatorname{im}\varphi\leq H\).
+
+    \item
+    自然投影把 \(g\in G\) 送到陪集 \(gN\).
+    有 \(gN=N\) 当且仅当 \(g\in N\)，因此它的核正是 \(N\).
+
+    \item
+    \(\operatorname{sgn}\) 的核由所有偶置换组成，也就是交错群 \(A_n\).
+\end{answers}
+
+% ================================================================
+%                         参考文献
+% ================================================================
+\clearpage
+\section*{参考文献}
+\addcontentsline{toc}{section}{参考文献}
+
+\begin{mybibliography}{DF04}
+    \bibitem[Lan02]{lang}
+    Serge Lang，\textit{Algebra}，3rd edition，Springer，2002.
+
+    \bibitem[DF04]{dummit-foote}
+    David S. Dummit and Richard M. Foote，\textit{Abstract Algebra}，3rd edition，Wiley，2004.
+\end{mybibliography}
+
+% ================================================================
+%                       术语索引：全文最后
+% ================================================================
+% 所有通过 \newterm 首次引入的术语都会自动进入下表，
+% 并记录第一次出现的页码.
+% 正式译本必须把 \printterminology 放在全文最后.
+\printterminology
+
+\end{document}
