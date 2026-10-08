@@ -1,7 +1,8 @@
 ---
 name: mathtranslation-cls-v31-upgrade
-description: "Use when migrating a Chinese math-book translation from the OLD mathtranslation template (v1.x, ctexart-based, single-file or thin wrapper) onto the NEW mathtranslation.cls v3.1 (ctexbook-based, kvoptions class options). Covers the three-layer heading remap (Section->Chapter->Subsection), continuous equation numbering on ctexbook, the shared-theorem-counter / \\@addtoreset hook traps, the \\printterminology unnumbered-chapter override, and the pymupdf-based regression audit that proves nothing was lost."
-agent_created: true
+description: "Migrate a Chinese LaTeX translation from a legacy ctexart MathTranslations template to a supplied mathtranslation.cls v3.1 book class when requested. Preserve heading hierarchy, equation/theorem counters, bibliography, terminology index, and content through regression review."
+metadata:
+  agent_created: true
 ---
 
 # Migrate a translation to mathtranslation.cls v3.1
@@ -148,8 +149,7 @@ gets numbered and the index appears as "第 N 章". Override the chapter command
 
 1. Build with the project driver (`xelatex` ×3 + `biber`/`bibtex`; `texindy` for the index).
    Require **errors=0, undefined=0**; treat `overfull`/`underfull` as cosmetic only.
-2. **Regression-audit the PDF against the pre-swap baseline** with `pymupdf` (text, since the
-   renderer cannot see images):
+2. **Regression-audit the PDF against the pre-swap baseline** with `pymupdf` (text plus rendered page inspection when available):
    - Record and compare: heading sequence; equation-label multiset; theorem/lemma/prop numbering
      multiset; figure count; citation count; and the `\envenddiamond` glyph `\u22c4` count.
    - Normalize with `re.sub(r'\s+','', text)` and compare **title sequences item-by-item** —
@@ -158,11 +158,12 @@ gets numbered and the index appears as "第 N 章". Override the chapter command
 3. Intended visual changes (v3.1 makes `\headfont` a *real* hei font, chapter label layout differs)
    are expected and must not be "fixed".
 
-## Environment notes (this Windows/WorkBuddy box)
+## Portability And Review
 
-- `dirname`/`head`/`ls`/`wc`/`tail` are **broken** in the Bash tool. Use Python for all file work:
-  `C:/Users/asus/.workbuddy/binaries/python/versions/3.13.12/python.exe`.
-- TeX binaries live in `D:\texlive\2026\bin\windows\`.
-- Preserve each source file's original line endings (many are CRLF); do not let an editor flip them.
-- Deleting many temp files (`_cltest*`) can trip `SAFE_DELETE_BULK_CONFIRM_REQUIRED`; just re-issue
-  the build instead of chaining a big delete.
+- Locate the available Python and TeX tools instead of copying a private machine path.
+- Preserve the existing encoding and line endings.
+- Use the supplied class's actual interface; this migration is optional and must
+  not be triggered simply because a translation concerns AI or mathematics.
+- Render changed pages when visual tools are available and report any missing
+  visual pass. Do not treat historical text-only limitations as current facts.
+- Scope cleanup to generated artifacts and temporary files from this migration.

@@ -10,6 +10,7 @@ Chapter/Section/Appendix/Note/Claim/Fact). Lines that are:
   - inside a LaTeX comment (%),
   - inside the bibliography (thebibliography block OR \\bibitem lines),
   - inside an intentional erratum note (\\erratum{...}),
+  - inside supported literal code, inline code, or pseudocode environments,
   - a reference/book title (a line containing \\emph{...} that looks like a
     citation, e.g. "Roquette, Peter: \\emph{The Brauer...}"),
 are EXCLUDED (those carry English on purpose). Any REMAINING hit is a candidate
@@ -23,6 +24,33 @@ above, not by the bibliography block strip.
 Scratch/backup dirs (_scratch, backup, *.bak) are skipped automatically.
 """
 import sys, os, re, glob
+
+# Keep this helper self-contained so the focused skill can be used independently.
+PROTECTED_RE = re.compile(
+    r'\\begin\s*\{(?P<protected_env>verbatim\*?|Verbatim\*?|BVerbatim|LVerbatim|lstlisting|minted|'
+    r'algorithm\*?|algorithmic|algorithm2e\*?|procedure|function)\}'
+    r'.*?\\end\s*\{(?P=protected_env)\}', re.S
+)
+INLINE_RE = re.compile(
+    r'\\(?:verb\*?|lstinline(?:\[[^\]]*\])?|'
+    r'mintinline(?:\[[^\]]*\])?\{[^{}]*\})(?P<delim>[^\s{])'
+    r'[^\n]*?(?P=delim)'
+    r'|\\(?:lstinline(?:\[[^\]]*\])?|'
+    r'mintinline(?:\[[^\]]*\])?\{[^{}]*\})\{[^{}\n]*\}'
+)
+
+
+def mask_protected(text):
+    """Mask supported regions without moving findings to the wrong line.
+
+    Not a full TeX parser: custom environments and nested inline braces need review.
+    """
+    def blank(match):
+        return re.sub(r'[^\r\n]', ' ', match.group(0))
+    text = re.sub('|'.join([r'(?<!\\)%[^\r\n]*',
+                           PROTECTED_RE.pattern, INLINE_RE.pattern]), blank, text, flags=re.S)
+    text = re.sub(r'\\begin\{thebibliography\}.*?\\end\{thebibliography\}', blank, text, flags=re.S)
+    return re.sub(r'\\erratum\{.*?\}', blank, text, flags=re.S)
 
 WORDS = r'\b(Theorem|Lemma|Proof|Remark|Corollary|Proposition|Definition|Example|Exercise|Chapter|Section|Appendix|Note|Claim|Fact)\b'
 SKIP = ('_scratch', 'backup', '.bak')
@@ -42,8 +70,7 @@ def main():
     found = 0
     for f in iter_files(target, g):
         txt = open(f, encoding='utf-8', errors='replace').read()
-        txt = re.sub(r'\\begin\{thebibliography\}.*?\\end\{thebibliography\}', '', txt, flags=re.S)
-        txt = re.sub(r'\\erratum\{.*?\}', '', txt, flags=re.S)
+        txt = mask_protected(txt)
         for i, line in enumerate(txt.splitlines(), 1):
             if line.lstrip().startswith("%"):
                 continue
@@ -63,7 +90,7 @@ def main():
                     continue
                 print("%s:%d: %s" % (f, i, line.strip()[:120]))
                 found += 1
-    print("\nCandidate untranslated-prose lines (comments/bib/erratum/ref-titles excluded): %d" % found)
+    print("\nCandidate untranslated-prose lines (code/algorithms/comments/bib/erratum/ref-titles excluded): %d" % found)
     if found == 0:
         print("OK: no stray English structural words in the body.")
 

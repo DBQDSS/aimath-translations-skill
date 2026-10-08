@@ -9,7 +9,8 @@ description: >
   set-builder notation, a differential sits outside math, or a whole word is typeset in
   math; or when you must decide whether the OCR dump or the printed page is the
   authority (spoiler: the page image).
-agent_created: true
+metadata:
+  agent_created: true
 ---
 
 # OCR-inherited math defect audit for a re-typeset LaTeX book

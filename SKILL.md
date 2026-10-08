@@ -1,11 +1,11 @@
 ---
-name: mathtranslations
-description: Translate mathematical books, papers, notes, and existing LaTeX projects into rigorous Chinese LaTeX, or review and repair an existing mathematical translation, including projects using the MathTranslations template. Use when source fidelity, mathematical correctness, terminology consistency, cross-references, citations, compilation, and PDF-level proofreading all matter. Do not use for ordinary non-mathematical translation.
+name: aimath-translations-skill
+description: Translate AI, machine learning, and mathematics books, papers, notes, or existing LaTeX projects into rigorous Chinese LaTeX; review and repair translations while preserving mathematics, code, pseudocode, experiments, and references. Use for technical translation and source-fidelity review, including optional MathTranslations templates. Do not use for ordinary nontechnical translation or software modernization.
 ---
 
-# MathTranslations
+# AI & Math Translations
 
-Produce a Chinese mathematical translation that can be compiled, checked against
+Produce a Chinese AI or mathematical translation that can be compiled, checked against
 the source, and maintained as a real LaTeX project.
 
 ## Establish The Source Of Truth
@@ -23,7 +23,7 @@ the source, and maintained as a real LaTeX project.
    requests it or reliable evidence resolves it.
 5. Separate content authority from presentation authority. The source PDF
    governs mathematical content; when the user chooses the MathTranslations
-   template, `mathtranslations-translation-template.tex` governs typesetting
+   template, its supplied class or bundled legacy TeX governs typesetting
    conventions.
 
 ## Prepare The Project
@@ -32,26 +32,29 @@ the source, and maintained as a real LaTeX project.
   citation keys, macros, and build system unless a change is necessary or the
   user explicitly chooses the MathTranslations template.
 - For a new project, consult the current MathTranslations guide before choosing
-  a template or terminology source. Prefer the latest stable resources linked
-  from <https://mathtranslations.org/guide/> over bundled stale copies.
+  a MathTranslations template or mathematical terminology source. For AI terms,
+  use the source's definitions and established Chinese usage in that field.
+  MathTranslations resources are an optional upstream reference, not an AI glossary.
 - When a `mathtranslations-translation-template.zip` or
   `mathtranslations-translation-template.tex` is supplied, inspect that exact
   version instead of relying on memory. Archives under the older name
   `MathTranslations-Template.zip` are earlier releases of the same template.
   Read [references/mathtranslations-template.md](references/mathtranslations-template.md)
   before adapting it.
-- The current MathTranslations template for books is the `mathtranslation.cls`
-  class (ctexbook-based). If the user supplies or prefers it, use its public
+- A supplied MathTranslations book template may use `mathtranslation.cls`
+  (ctexbook-based). Inspect the supplied version and use its public
   interface (`\makecover`, `\frontmatter`, `\makecontents`, `\makebibliography`,
-  `\printterminology`) and build via `tools/build.sh full` (xelatex ×2 → biber →
-  xelatex ×2). biblatex is loaded by the class from `BibStyle`/`BibFile`
-  options, so only call `\addbibresource` — never `\usepackage{biblatex}`. The
+  `\printterminology`). Use `tools/build.sh full` only if the project supplies
+  that driver; otherwise use its actual build system. If the inspected class
+  loads biblatex from `BibStyle`/`BibFile`, only call `\addbibresource`, not
+  `\usepackage{biblatex}`. The
   older single-file `mathtranslations-translation-template.tex` (ctexart) is
   bundled under `assets/` as a legacy reference only.
 - If the user selects the MathTranslations template but supplies no template
   files, copy `assets/mathtranslations-translation-template.tex` and
-  `assets/logo.pdf` into the project for the legacy variant, or the maintained
-  `mathtranslation.cls` + `logo.pdf` for the current variant. Keep the bundled
+  `assets/logo.pdf` into the project for the legacy variant. This skill does not
+  bundle `mathtranslation.cls` or the optional project build/crop tools: obtain
+  a user-supplied class if that variant is required. Keep the bundled
   masters unchanged; edit the project copies.
 - If the user supplies a newer template, prefer that version after comparing
   its contract with the bundled baseline and recording any meaningful changes.
@@ -71,23 +74,29 @@ the source, and maintained as a real LaTeX project.
   sound. Do not convert formulas into prose, screenshots, or Unicode lookalikes.
 - Preserve theorem-like environments, equation structure, bibliography links,
   footnotes, figures, tables, and section hierarchy.
+- Preserve code and pseudocode keywords, identifiers, literals, operators,
+  indentation, control flow, and algorithm line numbers. Keep `for`, `do`,
+  `end for`, `if`, `return`, `Input`, and `Output` in the source language;
+  do not localize algorithm-package keyword definitions. Translate descriptive
+  captions, explanatory prose, and safe natural-language comments only.
+  Read [references/ai-code-fidelity.md](references/ai-code-fidelity.md) for any
+  AI/ML source or any source containing code, pseudocode, or experiments.
 - Recreate commutative diagrams, morphism diagrams, category diagrams,
   pullback or pushout squares, and other arrow-and-node mathematical diagrams
   with the `tikz-cd` package and `tikzcd` environment. Do not replace them with
   screenshots or raster images. Preserve every node, label, arrow direction,
   arrow style, and commutative relationship from the source.
-- Handle ordinary figures by priority: when the source PDF is a clean vector
-  PDF, re-render the figure region at 400 DPI with `pymupdf` and autocrop it as
-  the preferred asset (perfect clarity, no raster blur); redraw simple figures
-  with ordinary TikZ; keep `tikzcd` for arrow-and-node diagrams. For crooched
-  crops feed a hand-verified `bbox` through an override table. Record any
-  exception.
-- Typeset display formulas uniformly in `align`, `aligned`, or `align*`
+- For ordinary figures, prefer a faithful PDF crop; a raster export at a suitable
+  resolution (e.g. 400 DPI) is a fallback, not a lossless vector copy. Redraw
+  simple figures with TikZ when needed. Neural-network architectures, computation
+  graphs, flowcharts, and plots need their own geometry, not forced `tikzcd`.
+  Verify crop boundaries, labels, legends, and any translated text.
+- When the selected template requires it, typeset display formulas in `align`, `aligned`, or `align*`
   environments. Never place multiple `\[ \]` blocks side by side; merge them
   into a single environment.
-- Use the `enumerate` environment for every ordered list; never type the
-  numbering manually.
-- Write Chinese double quotes with TeX ligatures: two grave accents for the
+- Use `enumerate` for ordered prose lists; preserve algorithm line numbering
+  and code indentation using the project's algorithm or listing environment.
+- With the MathTranslations template, write Chinese double quotes with TeX ligatures: two grave accents for the
   opening quote and two straight apostrophes for the closing quote. The
   apostrophe pair alone renders a closing quote, and Unicode curly quotes
   are not used in this template.
@@ -112,22 +121,26 @@ the source, and maintained as a real LaTeX project.
 
 Verification is part of the translation, not an optional final polish.
 
-1. Compile early and repeatedly with the project's actual build command
-   (`bash tools/build.sh full` for the `mathtranslation.cls` workflow: xelatex
-   ×2 → biber → xelatex ×2). Always start from a clean auxiliary state after any
-   template or `main.tex` change — stale `.aux`/`.toc` from a previous template
-   version can crash the first pass.
+1. Compile early and repeatedly with the project's actual build command.
+   Rebuild generated auxiliary files when a template change or stale state
+   requires it; do not delete source material or hand-maintained bibliography files.
 2. Compare the generated PDF with the source PDF section by section. Also assert
-   the *rendered* numbering by extracting text from the PDF (期望 `定义 X.M.K`,
-   `定理 X.Y`, `图 X.Y`); a clean build can still ship wrong numbers.
+   the rendered numbering against the source edition, including algorithms,
+   listings, theorems, and figures; a clean build can still ship wrong numbers.
 3. Perform three separate passes: Chinese language and terminology;
    mathematics and structural fidelity; compilation and visual layout.
 4. Run `scripts/audit_latex.py <project-or-tex-file>` for deterministic checks.
    Add `--profile mathtranslations` for projects based on the
-   `mathtranslation.cls` template, and use `--strict` when warnings should fail
+   selected MathTranslations template (legacy or supplied class), and use `--strict` when warnings should fail
    CI.
 5. Read [references/review-checklist.md](references/review-checklist.md) before
    declaring a chapter or project complete.
+
+For focused audits, read the relevant `skills/<name>/SKILL.md` only when needed
+(see the README inventory). These inherited helpers may assume a particular book,
+OCR schema, counter model, or toolchain. Verify those assumptions and required
+files before running them. Their examples do not override the source or the
+code/pseudocode preservation rules above; scanner hits require source review.
 
 ## Report The Result
 

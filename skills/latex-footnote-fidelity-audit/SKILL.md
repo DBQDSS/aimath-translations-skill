@@ -8,7 +8,8 @@ description: >
   an odd form ($^3$, {~}^2, .^4, ^{	extrm{5}}, {}^{2}, \ldots^{7}, Unicode superscripts),
   when a note body is missing, when a footnote band sits above the usual page threshold,
   or when an index entry disappeared because the \index{} mark lived inside a lost note.
-agent_created: true
+metadata:
+  agent_created: true
 ---
 
 # Footnote fidelity audit for OCR-based LaTeX re-typesetting

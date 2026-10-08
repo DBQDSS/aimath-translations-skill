@@ -8,7 +8,8 @@ description: >
   rendered numbers, when a numbered display was flattened into inline text, when a
   chapter's opening section does not restart the counter, or when the original used
   roman-numeral equation tags (i)(ii)(iii) that came out as arabic.
-agent_created: true
+metadata:
+  agent_created: true
 ---
 
 # LaTeX equation-numbering audit against the original book
@@ -17,6 +18,26 @@ agent_created: true
 
 Someone asks to "compare with the original and confirm the formula-numbering issues",
 or you notice `\eqref` output that contradicts hard-coded numbers in the prose.
+
+## Portability And Prerequisites
+
+Use the actual bundled `scripts/` paths, not historical `tools/` command examples.
+The source PDF is supplied through `AIMATH_ORIGINAL_PDF`; `AIMATH_PROJECT_ROOT`
+defaults to the working directory. Optional `AIMATH_TRANSLATED_PDF` selects the
+translated PDF for the geometry probe. `AIMATH_FOLIO_OFFSET` means
+`printed_folio = zero_based_pdf_index - offset`; its default `-1` merely reports
+physical page numbers. Calibrate it for the source edition before interpreting folios.
+`AIMATH_TAG_X_MIN` can set the source tag-band boundary in points; the default is
+a heuristic at 74% of page width and must be checked visually.
+
+The legacy label audit expects `eq:RomanChapter.section.number`; JSON comparison
+helpers expect the section/tag schemas documented in their source. In particular,
+`verify_sections.py` expects `yoschapter`/`yossection` macros. It uses the bundled
+tag reader, not the unbundled `compare_eq_numbers.py`. Do not apply those book-specific
+models to an AI book with different labels. `simulate_eq_numbers.py`, `find_page.py`,
+and `dump_tags.py` below are examples of project-supplied helpers, not bundled tools.
+When data or a section boundary is missing, compare the original pages manually.
+Scanner votes nominate a defect; the original PDF decides it.
 
 ## The method: 4 independent sources, then a vote
 

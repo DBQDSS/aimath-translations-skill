@@ -12,13 +12,14 @@ printed numbering can be read off with no OCR involved.
 Usage: python tools/render_orig_strip.py <idx_from> <idx_to> <out.png>
               [--layout row|col] [--scale 3] [--band 335 400]
 """
+import os
 import sys
 
 import pymupdf
 from PIL import Image, ImageDraw, ImageFont
 
-ORIG = r'F:\大学\数字资源\数学\分析学\泛函分析\吉田耕作\functional analysis Yosida.pdf'
-FOLIO_OFFSET = 16
+ORIG = os.environ.get('AIMATH_ORIGINAL_PDF')
+FOLIO_OFFSET = int(os.environ.get('AIMATH_FOLIO_OFFSET', '-1'))
 
 
 def font():
@@ -31,13 +32,15 @@ def font():
 
 
 def main():
+    if not ORIG:
+        sys.exit('Set AIMATH_ORIGINAL_PDF to the source PDF path.')
     if len(sys.argv) < 4:
         print(__doc__)
         return 1
     a, b, out = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
     scale = 3.0
     layout = 'row'
-    x0, x1 = 335, 400
+    x0, x1 = 0, None  # Without --band, render the full width.
     if '--scale' in sys.argv:
         scale = float(sys.argv[sys.argv.index('--scale') + 1])
     if '--layout' in sys.argv:
@@ -50,7 +53,7 @@ def main():
     tiles = []
     for i in range(a, b + 1):
         pg = d[i]
-        clip = pymupdf.Rect(x0, 40, x1, pg.rect.height - 40)
+        clip = pymupdf.Rect(x0, 0, x1 if x1 is not None else pg.rect.width, pg.rect.height)
         pm = pg.get_pixmap(matrix=pymupdf.Matrix(scale, scale), clip=clip)
         tiles.append((i - FOLIO_OFFSET, Image.frombytes('RGB', (pm.width, pm.height), pm.samples)))
 

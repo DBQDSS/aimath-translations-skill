@@ -1,82 +1,46 @@
 ---
 name: mathtranslation-build-verify
-description: "Compile and visually verify a LaTeX document (xelatex + biber + texindy) in this Windows / WorkBuddy environment, and prove the result is actually correct rather than merely error-free. Use when a .tex or .cls change must be validated, when diagnosing a LaTeX error, when choosing or verifying a font / typography change, or when you need to inspect a built PDF's pages, cross-references, TOC or terminology index. Captures the broken-coreutils shell constraint, the 5-step build (including the texindy index pass and its C-locale requirement), the non-ASCII `-output-directory` trap, log decoding, rendering PDF pages to images for visual inspection, and glyph-level measurement of the rendered result."
-agent_created: true
+description: "Build and verify a LaTeX translation using its actual toolchain; inspect logs, rendered pages, numbering, bookmarks, glyphs, bibliography, and indices. Use after TeX/template changes or for build diagnosis. The bundled driver supports a conventional XeLaTeX, biber, texindy workflow; other projects retain their own build commands."
+metadata:
+  agent_created: true
 ---
 
-# Build & verify a LaTeX document (Windows / WorkBuddy)
+# Build And Verify A LaTeX Translation
 
-## Environment facts (already established — do not rediscover)
+## Environment And Scope
 
-- **bash coreutils availability is environment-dependent — PROBE, don't assume.** In some sessions
-  the bundled Git Bash cannot run `ls`, `grep`, `head`, `od`, `tail`, `dirname` (`command not found`;
-  shim prints `cd: null directory`). In others (observed repeatedly in this project, 2026-09) they all
-  work, along with `wc`, `sort`, `uniq`, `date`, `time`, `cp`, `mv` and shell redirection.
-  Probe once at the start with `date && ls -1 | head -1`; if it prints, the coreutils are usable —
-  do **not** route work to PowerShell merely because the shim "might" be broken. Bash can always
-  launch executables by absolute path (see "Running the pipeline from a script" below), which is
-  often more reliable than PowerShell. Use the PowerShell tool only for genuine cmdlets /
-  Windows-specific work.
-- **PowerShell tool: stdout *does* work — two things garble it.** Re-tested 2026-09-30 on PS 5.1
-  Desktop: `echo`, `Get-ChildItem`, `Test-Path`, `Get-Content -Encoding UTF8`, `-replace`,
-  `Select-String`, `ConvertTo-Json`, `Get-Volume` (7), `Get-CimInstance`, `Get-WinEvent` and
-  `Invoke-WebRequest` (HTTP 200) all returned correct output, reproducibly. What breaks a transcript:
-  (a) `Invoke-WebRequest`'s **progress stream interleaves with stdout** and mangles it — set
-  `$ProgressPreference='SilentlyContinue'` first; (b) any cmdlet that draws a progress bar does the
-  same. If output still looks empty, fall back to
-  `[System.IO.File]::WriteAllLines($path, $lines)` and read the file with the **Read** tool.
-  Also: `cmd /c` is refused *by the PowerShell tool as well* ("cmd.exe cannot be used from the
-  PowerShell tool"), so `2>nul` / `%VAR%` are unavailable in both shells.
-- **PowerShell must never write this project's text files.** `[Console]::OutputEncoding` is `gb2312`;
-  `Set-Content -Encoding Default` writes **GB2312 bytes** and `-Encoding UTF8` writes a **BOM**
-  (`EF BB BF`) — either corrupts a UTF-8 `.tex`. The only safe form is
-  `[IO.File]::WriteAllText($p, $s, [Text.UTF8Encoding]::new($false))` (no BOM; CRLF survives if `$s`
-  contains it). Simplest rule: write text with the **Write/Edit** tool or with Python.
-- Toolchains (TeX Live 2026): `D:\texlive\2026\bin\windows\xelatex.exe`, `...\biber.exe`.
-- Managed Python `C:\Users\asus\.workbuddy\binaries\python\versions\3.13.12\python.exe` already has
-  **PyMuPDF** (`import pymupdf`). Use it for precise page rendering + text extraction —
-  for large 600+ page book PDFs, extracting/rendering specific target pages to PNG is vastly faster
-  and avoids context limits.
-- **Model vision capability branching (Read PNG vs text fallback)**:
-  An outdated note in early logs claimed "Read cannot render PNGs". That was an artifact of the
-  **authoring model being text-only**, which misdiagnosed its own lack of vision as a tool limitation.
-  In reality, image viewing is a property of the **running model** (multimodal vs text-only):
-  - **Multimodal vision model**: `Read` displays PNGs directly into the model's visual context.
-    Use it for real visual verification of layouts, diagram arrows, and line-breaks.
-  - **Text-only model**: `Read` returns `Content filtered` or `当前模型不支持图片`. In this case,
-    fall back to geometry/text measurements and **clearly state to the user that direct visual
-    verification was bypassed due to model modality limitations**.
-- PowerShell 5.1: **no `&&`, no `||`, no ternary**. Chain with `;`.
-- **Inline PowerShell commands containing `%` are refused by the security filter**, with
-  `Error: Command blocked for security: cmd.exe %VAR% environment variable syntax is not PowerShell
-  syntax`. It also trips on harmless Python string formatting like `"page%02d.png" % i`. Fix: write
-  the script to a file with the **Write** tool, then run `& $py "$d\_script.py"` — do not inline it.
-- TeX logs are not clean UTF-8. Decode for inspection with
-  `[System.Text.Encoding]::GetEncoding(28591)`. Mojibake for CJK is expected and harmless —
-  judge correctness from the rendered page image, not from log text. When *parsing* a log in Python,
-  detect the encoding instead of hardcoding it: `raw[:2] in (b"\xff\xfe", b"\xfe\xff")` → `utf-16`,
-  else `utf-8` (the log may be written by either PowerShell `Out-File -Encoding unicode` or a Python
-  driver).
-- **`cmd.exe` / `.bat` are hard-blocked** by the security filter (`Command blocked for security:
-  cmd.exe cannot be used`), and a `.ps1` invoked as `& script.ps1` silently does nothing. A project's
-  `latex.bat` is therefore unusable here — drive the build with a **Python script** (see below).
-- **A background PowerShell task does not reliably honour `Set-Location`/`cd`.** Compute every path
-  absolutely and pass `cwd=` to `subprocess.run`; never rely on the inherited working directory
-  (symptom: the log file is deleted-then-never-rewritten and the build "fails" instantly).
+Use the project's actual build driver and inspect the supplied class/version.
+Historical recipes below are conditional examples, not facts about this machine.
+Discover Python, TeX binaries, fonts, and shell capabilities locally. The bundled
+driver finds tools on PATH or in `TEXLIVE_BIN`; it must not assume a private
+installation path. Verify whether the project needs biber, bibtex, texindy,
+makeindex, or a custom index driver before selecting the fallback sequence.
+
+Preserve UTF-8 encoding and existing line endings. If log bytes are not UTF-8,
+decode them using the actual producer's encoding; retain original logs for diagnosis.
+If non-ASCII paths or PDF write locks cause failure, diagnose those conditions
+from the current tools rather than assuming every shell or platform has the issue.
+Use absolute paths and an explicit working directory for background jobs.
+
+Render changed pages and inspect them when image tools are available. If direct
+visual inspection is unavailable, report that limitation. Check algorithm and
+listing pages too: their source-language keywords, indentation, line numbers,
+and symbols must survive the build. Compilation is not a proof of translation,
+mathematical, or algorithmic correctness.
 
 ## Build the document
 
-Always 3 xelatex passes; 2 is not enough once `biblatex`/`\newterm` are in play.
+For the conventional fallback below, use enough XeLaTeX passes to resolve all generated data; respect the actual project driver.
 **If the project has an index (`\makeindex` / `main.idx`), it is 5 steps, not 3** — see below.
 
 ```powershell
 $d = "<the directory containing main.tex>"
 Set-Location $d
 Remove-Item "main.aux","main.bcf","main.log","main.out","main.toc","main.run.xml" -ErrorAction SilentlyContinue
-& "D:\texlive\2026\bin\windows\xelatex.exe" -interaction=nonstopmode -file-line-error main.tex *> "build1.log"
-if (Test-Path "main.bcf") { & "D:\texlive\2026\bin\windows\biber.exe" main *> "build_biber.log" }
-& "D:\texlive\2026\bin\windows\xelatex.exe" -interaction=nonstopmode -file-line-error main.tex *> "build2.log"
-& "D:\texlive\2026\bin\windows\xelatex.exe" -interaction=nonstopmode -file-line-error main.tex *> "build3.log"
+& "xelatex" -interaction=nonstopmode -file-line-error main.tex *> "build1.log"
+if (Test-Path "main.bcf") { & "biber" main *> "build_biber.log" }
+& "xelatex" -interaction=nonstopmode -file-line-error main.tex *> "build2.log"
+& "xelatex" -interaction=nonstopmode -file-line-error main.tex *> "build3.log"
 ```
 
 - `-file-line-error` is what makes `./file.cls:69: message` appear — keep it.
@@ -95,7 +59,7 @@ exit code 2, no `main.ind` written). Always force the C locale for this one step
 
 ```powershell
 $env:LC_ALL="C"; $env:LANG="C"; $env:LC_CTYPE="C"
-& "D:\texlive\2026\bin\windows\texindy.exe" -M texindy -I xelatex -C utf8 main.idx
+& "texindy" -M texindy -I xelatex -C utf8 main.idx
 Remove-Item Env:LC_ALL,Env:LANG,Env:LC_CTYPE
 ```
 
@@ -129,71 +93,14 @@ elsewhere (or not happen), so the freshly written PDF embeds an **old bookmark t
 `.aux` get new mtimes and only `.out` stays stale. Always build with cwd = project dir and no
 `-output-directory` flag.
 
-### Running the pipeline from a script: prefer the Bash tool over PowerShell
+### Bundled Fallback Driver
 
-The claim "use PowerShell for every shell step" is too strong. The Bash tool *can* launch
-executables by absolute path perfectly well — and in many sessions the **coreutils work too** (probe
-first, as in "Environment facts"). A Python driver invoked as
-
-```
-"C:/Users/asus/.workbuddy/binaries/python/versions/3.13.12/python.exe" "D:/.../build_and_check.py"
-```
-
-is a **more reliable channel than PowerShell** for anything that touches text encoding.
-
-**Which shell for what — decided by probe on 2026-09-30; the criteria are the encoding guarantees,
-not taste:**
-
-| task | use | why |
-|---|---|---|
-| the LaTeX toolchain (`xelatex` / `biber` / `texindy` / `splitindex`) | **Bash** | the project's `_build.sh` already pins PATH and the UTF-8 locale; `set -e` semantics |
-| file enumeration / move / archive / bulk rename | **Bash** or **Python** | `os.replace()` is instant and reversible; `rm` hits a per-turn quota |
-| reading & writing `.tex` / `.md` text | **Python**, or the **Write/Edit** tool | the *only* way to guarantee UTF-8-no-BOM **and** CRLF at once |
-| wide regex sweeps over many files | **Bash `grep`** with the pattern **in a file**, or the **Grep** tool | inline patterns lose a backslash level to the shim |
-| `.NET`, COM, Win32 object queries | **PowerShell** | its one genuinely irreplaceable niche |
-| registry read/write | **Python `winreg`** — *not* PowerShell | can be JSON-dumped and replayed; `reg.exe` is blacklisted |
-| event log | Bash `wevtutil`, or PowerShell `Get-WinEvent` | both verified working; `wevtutil` output is cleaner |
-| disk / system inventory | **PowerShell** | `Get-Volume` / `Get-CimInstance` verified working (an older note claiming they silently return empty is **wrong**) |
-| HTTP fetch | the **WebFetch** tool, then `curl` in Bash, then PowerShell | PS needs `$ProgressPreference='SilentlyContinue'` first |
-| a script the user double-clicks | `.cmd` (CRLF) or `.ps1` (pure ASCII) | it is executed by *them*, not by a tool |
-
-**Three hard rules that follow:**
-
-1. **Never invoke `powershell.exe` from Bash** — the security filter refuses it
-   ("Invoking PowerShell from Bash bypasses PowerShell security checks").
-2. **Never write project text from PowerShell** (GB2312 / BOM, see "Environment facts").
-3. **Re-probe capability instead of trusting a note.** Shell abilities in this sandbox have changed
-   between sessions in *both* directions — `Get-Volume` used to return nothing and now works; the
-   Bash shim used to lose coreutils and now usually has them. One probe line
-   (`date && ls -1 | head -1` in Bash; `"$($PSVersionTable.PSVersion)"` plus one file listing in
-   PowerShell) settles it in a second, and either can change *within* a session.
-   And when a Bash command fails with **no output at all**, suspect an unset PATH first: without
-   `export PATH=...` the shim's `ls`/`dirname` fail silently, so only the downstream `head` reports
-   an error and the real cause is easy to miss.
-
-**A ready-made driver ships with this skill: `scripts/build_and_check.py`.** Run
-`python scripts/build_and_check.py <project_dir>` (defaults to cwd). It performs all 5 steps, applies
-the C locale to `texindy` only, counts every counter below (including both error patterns) and prints
-the verdict, also writing `_build_report.txt`; it exits non-zero if anything is non-zero.
-
-Writing your own instead: use the **Write** tool (never inline a `%`-containing command) and have it
-call `subprocess.run([...], cwd=WD, capture_output=True)`. Decode output with
-`(p.stdout or b"").decode("utf-8","replace")` — `texindy`'s output is not valid UTF-8 and a plain
-`.decode()` raises `UnicodeDecodeError`, and `p.stdout is None` crashes naive code.
-
-> **TRAP — a heredoc is `bash -c` in disguise: `python - <<'PY' … PY` also eats backslashes.**
-> Quoting the delimiter (`<<'PY'`) stops *shell expansion*, but the Bash tool's own wrapper still
-> strips a backslash level before python sees it, so a regex like `re.finditer(r'\\hypertarget\{…\}')`
-> dies with `re.PatternError: bad escape \h at position 0`. The same heredoc run through a *script
-> file* is fine. **Rule: anything containing a regex, a LaTeX macro, or a Windows path goes into a
-> `.py` file written with the Write tool — never into `python -c` and never into a heredoc.**
->
-> The same stripping makes a *correct* pattern test as broken: `printf '%s\n' 'X:^\\item'` echoes
-> back `X:^\item`. If a grep you just proved right on disk returns 0 inline, this is why — put it in
-> a file and re-run before changing the pattern. (Conversely, a pattern sitting in a real script file
-> is delivered verbatim, which is how `grep -c '^ *\\item'` correctly counts 546 xindy entries whose
-> `\item` lines are *indented*. A summary grep that silently reports `0` is worse than no summary at
-> all.)
+Run `python scripts/build_and_check.py <project_dir>` from this skill directory
+only for projects compatible with its XeLaTeX/biber/texindy sequence. It writes
+`_build_report.txt` and returns failure for failed build steps or reported defects.
+It is not a replacement for a supplied driver with custom bibliography or indices.
+For file-backed commands, keep regexes and LaTeX strings out of ambiguous nested
+shell quoting. Inspect process return codes as well as the final log.
 
 ## Scan the log
 
@@ -447,8 +354,8 @@ pointing at the last index page instead of the first — is the entire bug.
   the font families do).
 - **`@` is already catcode 11 inside `.cls`/`.sty`.** `\makeatother` there *breaks* every later
   `\@`-macro; never use the pair in a class file.
-- **Never write `.ps1`/`.bat` files containing non-ASCII paths** — encoding corruption garbles them.
-  Pass the commands inline to the PowerShell tool instead.
+- **Preserve script encoding when paths contain non-ASCII characters.** Use the
+  current shell's supported encoding or a file-backed Python driver.
 - **Back up the existing `main.pdf`** (`main.pdf.bak`) before the first rebuild, and delete the
   backup plus all `_*.log` / `_*.txt` / `_verify/` scratch afterwards. Leave `main.aux/.bcf/.toc/
   .run.xml/.blg/.bbl` in place — they are normal build artifacts.

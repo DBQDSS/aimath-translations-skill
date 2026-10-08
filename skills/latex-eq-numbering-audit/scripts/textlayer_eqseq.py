@@ -24,10 +24,10 @@ import collections
 
 import pymupdf
 
-ORIG = r'F:\大学\数字资源\数学\分析学\泛函分析\吉田耕作\functional analysis Yosida.pdf'
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FOLIO_OFFSET = 16          # folio = pdf_index - 16  (与 render_orig_strip 一致)
-X_MIN = 352.0              # 右缘起点（版心右界约 373pt）
+ORIG = os.environ.get('AIMATH_ORIGINAL_PDF')
+ROOT = os.environ.get('AIMATH_PROJECT_ROOT', os.getcwd())
+FOLIO_OFFSET = int(os.environ.get('AIMATH_FOLIO_OFFSET', '-1'))
+X_MIN = float(os.environ.get('AIMATH_TAG_X_MIN', '0'))
 OUT_JSON = '_textlayer_eqseq.json'
 
 # 形如 (12)  (12')  (12'')  (i)  (vii')  —— 必须带括号；
@@ -78,7 +78,7 @@ def page_tags(pg):
         ln.sort(key=lambda w: w[0])
         for i, w in enumerate(ln):
             x0, y0, txt = w[0], w[1], w[4]
-            if x0 < X_MIN or len(txt) > 7:
+            if x0 < (X_MIN or 0.74 * pg.rect.width) or len(txt) > 7:
                 continue
             v = normalize(txt)
             if v is None:
@@ -189,7 +189,7 @@ def single(key):
     # 逐页
     sec = next((s for s in secs if s['key'] == key), None)
     if sec:
-        for pi in range(sec['start_page'], sec['start_page'] + 6):
+        for pi in range(sec['start_page'], min(sec['start_page'] + 6, doc.page_count)):
             tg = page_tags(doc[pi])
             print('  idx %d (folio %s): %s' % (pi, pi - FOLIO_OFFSET,
                   ' '.join(t['raw'] for t in tg) or '(none)'))
@@ -231,6 +231,8 @@ def main():
 
 
 if __name__ == '__main__':
+    if not ORIG:
+        sys.exit('Set AIMATH_ORIGINAL_PDF to the source PDF path.')
     if '--json' in sys.argv:
         main()
     elif len(sys.argv) > 1 and not sys.argv[1].startswith('-'):

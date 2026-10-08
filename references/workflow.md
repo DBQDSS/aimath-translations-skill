@@ -1,6 +1,6 @@
 # Translation Workflow
 
-Use this workflow for a new mathematical translation or a substantial new
+Use this workflow for a new AI/ML or mathematical translation or a substantial new
 chapter. Adapt the granularity to the project instead of forcing every job into
 the same number of files or passes.
 
@@ -11,6 +11,8 @@ Locate and classify:
 - the published source PDF;
 - editable TeX and bibliography sources;
 - figures, tables, diagrams, and external data;
+- code listings, pseudocode, literal prompts, model input/output examples,
+  experiment results, and any supplied software/version information;
 - custom classes, packages, fonts, and macros;
 - an existing Chinese translation or terminology list;
 - the build command and expected engine.
@@ -50,14 +52,14 @@ For a new project:
   untouched copy, and compile the unchanged template as a baseline;
 - if the user did not supply template files, copy the skill's bundled
   `assets/mathtranslations-translation-template.tex` and `assets/logo.pdf`
-  into the project for the legacy ctexart variant, or the maintained
-  `mathtranslation.cls` + `logo.pdf` for the current ctexbook variant;
+  into the project for the bundled legacy ctexart variant; the ctexbook variant
+  needs a supplied `mathtranslation.cls`, which is not bundled;
 - otherwise choose a Unicode-capable Chinese TeX setup appropriate to the
   environment;
 - keep source assets and generated build artifacts separate;
-- establish a repeatable build command — for `mathtranslation.cls` projects use
-  `bash tools/build.sh full` (xelatex ×2 → biber → xelatex ×2); start from a
-  clean auxiliary state after any template or `main.tex` change;
+- establish a repeatable build command using the project's existing driver;
+  `tools/build.sh full` is an example for projects that provide it, not a
+  bundled dependency. Clear generated auxiliary state when it is stale;
 - create a minimal sample containing Chinese prose, formulas, theorem
   environments, references, citations, and one figure before scaling up.
 
@@ -92,6 +94,10 @@ For a new or disputed term:
 Keep symbols, transliterations, capitalization, and named constructions
 consistent. Do not translate a term mechanically when its meaning changes by
 context.
+
+For AI/ML books, include model, dataset, metric, and library names in the glossary
+as preserved identifiers. Resolve terms from their source definitions; do not
+use a mathematical glossary as the sole authority for AI terminology.
 
 With the MathTranslations template, encode the first formal occurrence with
 `\newterm{stable-key}{中文术语}{English term}` and write the Chinese term normally
@@ -131,11 +137,11 @@ or `align*` environments and never place multiple `\[ \]` blocks side by side.
 
 Follow the template's figure priority: when the source PDF is a clean vector
 PDF, re-render the figure region at 400 DPI with `pymupdf` and autocrop it as
-the preferred asset (perfect clarity, no raster blur); redraw simple figures
+an available raster fallback (not lossless vector output); redraw simple figures
 with ordinary TikZ; rebuild arrow-and-node diagrams with `tikz-cd` (never
-screenshots of them). Use the project's `tools/figcrop.py` to locate each
+screenshots of them). If supplied, use the project's `tools/figcrop.py` to locate each
 `Fig. N.M` caption and crop its bounding box to `images/fig/fig-X-Y.png`, then
-repoint `\includegraphics` with `tools/rewire_figures.py` (back up `chapters/`
+repoint `\includegraphics` with its `tools/rewire_figures.py` (back up `chapters/`
 first). Translate captions and table text without changing data. Preserve labels
 and references. If an asset is missing, use an explicit placeholder and report it
 rather than inventing a replacement.
@@ -147,6 +153,20 @@ commutativity.
 
 Record every figure that cannot follow this priority, such as photographs or
 free-form illustrations that TikZ cannot faithfully express.
+
+### Code, Algorithms, And AI Experiments
+
+Read [ai-code-fidelity.md](ai-code-fidelity.md). Protect code and pseudocode tokens
+before translating captions, prose, or safe comments. Inspect algorithm-package
+keyword overrides: rendered `for`, `do`, `end for`, `Input`, and `Output` must
+retain the source language. Keep indentation, loop bounds, updates, algorithm line
+numbers, literal prompts, and expected outputs intact. Prose `enumerate` and
+MathTranslations punctuation rules do not apply to literal code or algorithm syntax.
+
+Preserve experimental values, metric direction, units, tensor shapes, model/dataset
+identifiers, and uncertainty qualifiers. Architecture diagrams and computational
+graphs may require ordinary TikZ or faithful assets instead of `tikzcd`. Never
+invent results or update examples to a different software version.
 
 ### Bibliography
 

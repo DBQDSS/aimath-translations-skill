@@ -5,24 +5,30 @@
 Usage:  python tools/find_orig_page.py "Cayley transform" ["another phrase" ...]
 Prints candidate page indices (0-based), printed folio, and the OCR snippet.
 """
+import os
 import re
 import sys
 
 import pymupdf
 
-ORIG = r'F:\大学\数字资源\数学\分析学\泛函分析\吉田耕作\functional analysis Yosida.pdf'
-FOLIO_OFFSET = 16          # page_index 322 -> printed folio 306
+ORIG = os.environ.get('AIMATH_ORIGINAL_PDF')
+FOLIO_OFFSET = int(os.environ.get('AIMATH_FOLIO_OFFSET', '-1'))
 
 
 def norm(s):
-    return re.sub(r'[^a-z0-9]+', '', s.lower())
+    return re.sub(r'[\W_]+', '', s.lower())
 
 
 def main():
+    if not ORIG:
+        sys.exit('Set AIMATH_ORIGINAL_PDF to the source PDF path.')
     d = pymupdf.open(ORIG)
     pages = [norm(d[i].get_text()) for i in range(d.page_count)]
     for phrase in sys.argv[1:]:
         n = norm(phrase)
+        if not n:
+            print('Skipping empty normalized phrase: %r' % phrase)
+            continue
         print('=' * 70)
         print('PHRASE: %r   (normalised len=%d)' % (phrase, len(n)))
         hits = []

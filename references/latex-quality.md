@@ -14,7 +14,8 @@ notation, or repairing a translated project.
 - Keep equation grouping and alignment when it communicates derivation or
   equivalence.
 - Do not normalize notation merely because another notation is more familiar.
-- Use `enumerate` for ordered lists; never type the numbering manually.
+- Use `enumerate` for ordered prose lists; preserve listing and algorithm line
+  numbering in their native environments.
 
 When the source seems mathematically wrong, record the exact location and the
 evidence. Preservation and correction are separate editorial choices.
@@ -88,6 +89,12 @@ The same profile uses Song for prose and examples, Kai for first-introduction
 terms, Fang for most theorem-like bodies, and CMU Serif for English. Preserve
 those roles unless the supplied template version says otherwise.
 
+These are prose conventions. Do not apply them inside code, literal prompts,
+or pseudocode syntax. Preserve the source keywords even if an algorithm package
+offers localized definitions; check the compiled output as well as the TeX.
+Read [ai-code-fidelity.md](ai-code-fidelity.md) for protected tokens, safe comment
+translation, AI mathematics, experimental data, and algorithm verification.
+
 ## OCR And Transcription
 
 Treat OCR as a draft, not evidence. Check common confusions including:
@@ -115,6 +122,11 @@ re-render the figure region at 400 DPI from a clean vector source PDF with
 rebuild arrow-and-node diagrams with `tikz-cd`. When recreating a diagram,
 compare geometry, labels, orientation, and semantic relationships, not just
 visual style.
+
+The `tikz-cd` requirement concerns mathematical commutative/morphism diagrams.
+Do not impose it on neural architectures, computation graphs, flowcharts, or plots.
+Rendering a vector page to PNG is a rasterization step; verify small labels and
+line clarity rather than claiming the result is lossless.
 
 For arrow-and-node mathematical diagrams, use:
 
@@ -148,11 +160,12 @@ resolve bibliography, index, glossary, or cross-reference data, so run the full
 build sequence.
 
 For the `mathtranslation.cls` template, the canonical build is
-`bash tools/build.sh full` (xelatex ×2 → biber → xelatex ×2): the first
+the project's actual full build command (for example, `bash tools/build.sh full`
+when that script is supplied): the first
 xelatex pass records labels and terminology entries, biber resolves the
 bibliography, and the later passes resolve page numbers, links, the table of
 contents, and the terminology table. **After any change to the class or
-`main.tex`, delete the auxiliary files (`main.aux`, `main.toc`, `main.out`,
+`main.tex` changes template behavior, clear stale generated auxiliary files (`main.aux`, `main.toc`, `main.out`,
 `main.bbl`, `main.bcf`, `main.run.xml`) and rebuild clean** — a stale `.toc`
 from another template version can crash the first pass with an undefined
 control sequence such as `\InAppendixToctrue`.
@@ -168,5 +181,5 @@ Inspect logs for:
 
 Compilation proves syntactic and toolchain consistency. It does not prove that
 the translation or mathematics is correct, and a clean build can still ship
-wrong displayed numbers — verify the rendered numbering (定理 X.Y, 定义 X.M.K,
-图 X.Y) by extracting text from the PDF.
+wrong displayed numbers — verify theorem, definition, figure, algorithm, and
+listing numbers against the source edition by inspecting the compiled PDF.

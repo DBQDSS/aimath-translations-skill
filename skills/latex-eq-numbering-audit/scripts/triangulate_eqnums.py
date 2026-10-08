@@ -14,7 +14,7 @@ import re
 import sys
 import collections
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.environ.get('AIMATH_PROJECT_ROOT', os.getcwd())
 
 
 def load_json_src(path):

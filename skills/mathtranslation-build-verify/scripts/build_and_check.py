@@ -13,17 +13,25 @@ Exit code 0 iff every counter below is zero.
 """
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
 
 BASE = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.getcwd()
-TL = os.environ.get('TEXLIVE_BIN', r'D:\texlive\2026\bin\windows')
+TL = os.environ.get('TEXLIVE_BIN')
 os.chdir(BASE)
 
-XL = os.path.join(TL, 'xelatex.exe')
-BI = os.path.join(TL, 'biber.exe')
-IX = os.path.join(TL, 'texindy.exe')
+def tool(name):
+    if TL:
+        return os.path.join(TL, name + ('.exe' if os.name == 'nt' else ''))
+    return shutil.which(name) or name
+
+
+XL, BI, IX = tool('xelatex'), tool('biber'), tool('texindy')
+
+if not os.path.isfile('main.tex'):
+    sys.exit('Project must contain main.tex; use the project driver for other layouts.')
 
 
 def run(name, args, env=None):
@@ -38,6 +46,9 @@ def run(name, args, env=None):
         print('  --- tail ---')
         for l in tail:
             print('   ', l[:160])
+    if r.returncode != 0:
+        # Stop before stale logs or PDFs can be reported as a clean build.
+        sys.exit(r.returncode)
     return r.returncode
 
 

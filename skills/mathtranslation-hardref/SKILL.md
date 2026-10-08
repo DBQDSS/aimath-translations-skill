@@ -1,7 +1,8 @@
 ---
 name: mathtranslation-hardref
 description: "This skill should be used when working on Chinese math book translations (mathtranslation.cls 数译 / mathtranslations.org, OR a book class like AJbook.cls / ctexbook) and the task is to convert hard-coded references into clickable cross-references. Covers two families: (A) theorem/equation references like 定理 3.4 / 方程 (22) → \\ref / \\eqref, and (B) bare printed-number references like (2.3) / 见 3.25 / cross-chapter (II, § 1) / internal page refs (p. 3) → \\ref / \\hyperlink / \\pageref, including how to add anchors where the target has no label. It captures the (non-obvious) counter models, the safe aux-derived mapping rule, and the hand-typeset-item technique."
-agent_created: true
+metadata:
+  agent_created: true
 ---
 
 # Convert hard-coded references to clickable cross-references (mathtranslation.cls)
@@ -22,7 +23,12 @@ script-driven pass instead of error-prone manual editing.
   but references are still hard-coded.
 - Do NOT use this for the profile's two known false-positives (see Limitations).
 
-## Counter model (critical, non-obvious)
+## Legacy Counter Model (Verify Before Use)
+
+The following model describes a legacy ctexart project, not every version of
+`mathtranslation.cls`. Supplied v3.x classes may wrap ctexbook. Inspect the actual
+class, counters, labels, and rendered numbers before running a converter.
+Never rewrite code/pseudocode literals as cross-references.
 
 1. `mathtranslation.cls` wraps `ctexart`. Theorem-like environments (`theorem`, `proposition`,
    `lemma`, `corollary`, `definition`, `remark`, `example`, `problem`) are declared with a
@@ -83,12 +89,11 @@ resolves. Visually the rendered text is unchanged (e.g. `命题 1.6` → `\propr
   an editorial discrepancy requiring a human decision (preserve the original word with `\thmref`
   to avoid changing the translated text, or fix the environment).
 
-## Limitations / known false-positives
+## Audit Findings
 
-The `mathtranslations` audit profile also emits two benign WARNINGs that should be ignored:
-- "expected a ctexart document class declaration" — `mathtranslation` wraps `ctexart`.
-- "\printterminology is not the final document content" — `\printterminology` is the final
-  content before `\end{document}`.
+Review warnings against the selected template. The main audit supports both
+legacy ctexart and supplied class projects; do not dismiss a class or final-index
+warning solely because an earlier project treated it as benign.
 
 ## Bundled resources
 

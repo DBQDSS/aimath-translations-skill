@@ -1,4 +1,4 @@
 interface:
-  display_name: "MathTranslations"
-  short_description: "Translate mathematical texts into rigorous Chinese LaTeX"
-  default_prompt: "Use $mathtranslations to translate this mathematical source into publication-ready Chinese LaTeX."
+  display_name: "AI & Math Translations"
+  short_description: "Translate AI and math texts with code fidelity"
+  default_prompt: "Use $aimath-translations-skill to translate this AI or mathematical source into Chinese LaTeX, preserving mathematics, code, and pseudocode keywords."

@@ -19,6 +19,7 @@ EXCLUDED_DIRS = {
     "node_modules",
     "out",
     "mathtranslations-skill",
+    "aimath-translations-skill",
 }
 
 COMMAND_PATTERNS = {
@@ -95,6 +96,42 @@ TEMPLATE_MARKERS = {
     "clickable TOC entries": "linktoc=all",
     "cover translator credit": r"\Translator\ 翻译及重排",
 }
+
+LITERAL_CODE_RE = re.compile(
+    r"\\begin\s*\{(?P<literal_env>verbatim\*?|Verbatim\*?|BVerbatim|LVerbatim|lstlisting|minted)\}"
+    r".*?\\end\s*\{(?P=literal_env)\}", re.DOTALL
+)
+INLINE_CODE_RE = re.compile(
+    r"\\(?:verb\*?|lstinline(?:\[[^\]]*\])?|"
+    r"mintinline(?:\[[^\]]*\])?\{[^{}]*\})(?P<delim>[^\s{])"
+    r"[^\n]*?(?P=delim)"
+    r"|\\(?:lstinline(?:\[[^\]]*\])?|"
+    r"mintinline(?:\[[^\]]*\])?\{[^{}]*\})\{[^{}\n]*\}"
+)
+ALGORITHM_RE = re.compile(
+    r"\\begin\s*\{(?P<algorithm_env>algorithm\*?|algorithmic|algorithm2e\*?|procedure|function)\}"
+    r".*?\\end\s*\{(?P=algorithm_env)\}", re.DOTALL
+)
+
+
+def mask_code(text: str, *, algorithms: bool = False) -> str:
+    """Hide supported literal regions while preserving offsets and line numbers.
+
+    This is a bounded static filter, not a TeX parser. Custom environments,
+    macro-generated listings, and listing escape-to-TeX need source review.
+    """
+    def blank(match: re.Match[str]) -> str:
+        if match.group("comment") is not None:
+            return match.group(0)
+        return re.sub(r"[^\r\n]", " ", match.group(0))
+
+    # Match in source order: an inline '%' stays code, while delimiters in
+    # actual comments cannot swallow later content. Retain comments for TODOs.
+    patterns = [r"(?P<comment>(?<!\\)%[^\r\n]*)",
+                LITERAL_CODE_RE.pattern, INLINE_CODE_RE.pattern]
+    if algorithms:
+        patterns.append(ALGORITHM_RE.pattern)
+    return re.sub("|".join(patterns), blank, text, flags=re.DOTALL)
 
 # Markers expected in a project built on the current `mathtranslation.cls`
 # (ctexbook-based) template. The class file supplies most of them, so the audit
@@ -217,11 +254,12 @@ def audit_mathtranslations_profile(
     for source_file in source_files:
         text = read_text(source_file)
         raw_parts.append(text)
-        active = strip_comments(text)
+        active = strip_comments(mask_code(text))
         active_parts.append(active)
         display = source_file.relative_to(project_root)
         manual_numbering_run = 0
-        for number, line in enumerate(active.splitlines(), start=1):
+        prose = mask_code(active, algorithms=True)
+        for number, line in enumerate(prose.splitlines(), start=1):
             if "。" in line:
                 warnings.append(
                     f"{display}:{number}: MathTranslations prose uses ASCII '.' "
@@ -243,7 +281,7 @@ def audit_mathtranslations_profile(
             else:
                 manual_numbering_run = 0
 
-        for match in CONSECUTIVE_DISPLAY_MATH_RE.finditer(active):
+        for match in CONSECUTIVE_DISPLAY_MATH_RE.finditer(prose):
             warnings.append(
                 f"{display}:{line_number(active, match.start())}: consecutive "
                 "display-math blocks; use a single align/aligned/align* "
@@ -255,7 +293,7 @@ def audit_mathtranslations_profile(
     # The user's own \printterminology call lives in a .tex file; counting it
     # across .cls/.sty would also catch class definitions and backup samples.
     tex_active = "\n".join(
-        strip_comments(read_text(sf))
+        strip_comments(mask_code(read_text(sf)))
         for sf in source_files
         if sf.suffix.lower() == ".tex"
     )
@@ -365,7 +403,7 @@ def audit_mathtranslations_profile(
 
     term_locations: dict[str, list[str]] = {}
     for source_file in source_files:
-        text = strip_comments(read_text(source_file))
+        text = strip_comments(mask_code(read_text(source_file)))
         display = source_file.relative_to(project_root)
         for match in NEWTERM_RE.finditer(text):
             key = match.group(1).strip()
@@ -436,7 +474,7 @@ def audit(
 
     for tex_file in tex_files:
         text = read_text(tex_file)
-        active_text = strip_comments(text)
+        active_text = strip_comments(mask_code(text))
         display = tex_file.relative_to(project_root)
 
         for name, pattern in COMMAND_PATTERNS.items():
@@ -463,7 +501,8 @@ def audit(
                     if not resolve_asset(project_root, tex_file, value):
                         errors.append(f"{location}: missing graphic asset {value!r}")
 
-        for match in TODO_RE.finditer(text):
+        # Literal example tokens such as TODO or \ref are not project defects.
+        for match in TODO_RE.finditer(mask_code(text)):
             warnings.append(
                 f"{display}:{line_number(text, match.start())}: unresolved marker "
                 f"{match.group(0)!r}"

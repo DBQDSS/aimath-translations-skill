@@ -9,13 +9,14 @@ interword space (~3 pt) in front of the "(2)".  Measuring that gap lets us rejec
 the in-text false positives.
 """
 import collections
+import os
 import re
 import sys
 
 import pymupdf
 
-ORIG = r'F:\大学\数字资源\数学\分析学\泛函分析\吉田耕作\functional analysis Yosida.pdf'
-OURS = 'main.pdf'
+ORIG = os.environ.get('AIMATH_ORIGINAL_PDF')
+OURS = os.environ.get('AIMATH_TRANSLATED_PDF', 'main.pdf')
 
 TAG = re.compile(r'^\(\s*\d+\s*(?:[\u2032\u2019\']*)\s*\)$')
 
@@ -31,13 +32,15 @@ def analyse(path, label, xmin, pages):
     gaps = []
     samples = []
     for i in pages:
+        if i >= d.page_count:
+            continue
         pg = d[i]
         for b in pg.get_text('dict')['blocks']:
             for l in b.get('lines', []):
                 ss = spans_of_line(l)
                 for k, s in enumerate(ss):
                     t = s['text'].strip()
-                    if s['bbox'][2] >= xmin and TAG.match(t):
+                    if s['bbox'][2] >= (xmin or 0.74 * pg.rect.width) and TAG.match(t):
                         if k > 0:
                             gap = s['bbox'][0] - ss[k - 1]['bbox'][2]
                             prev = ss[k - 1]['text'].strip()[-24:]
@@ -73,7 +76,8 @@ def analyse(path, label, xmin, pages):
 
 
 if __name__ == '__main__':
-    rng_o = list(range(20, 120))
-    rng_m = list(range(15, 115))
-    analyse(ORIG, 'ORIGINAL', 365.0, rng_o)
-    analyse(OURS, 'OURS', 505.0, rng_m)
+    if not ORIG:
+        sys.exit('Set AIMATH_ORIGINAL_PDF to the source PDF path.')
+    xmin = float(os.environ.get('AIMATH_TAG_X_MIN', '0'))
+    analyse(ORIG, 'ORIGINAL', xmin, range(100))
+    analyse(OURS, 'OURS', 0, range(100))

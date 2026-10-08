@@ -1,21 +1,21 @@
-# MathTranslations Template Profile
+# Optional MathTranslations Template Profile
 
 Read this reference when the user supplies or requests a MathTranslations-style
 LaTeX template. There are two related templates in circulation, and they are
 **not** interchangeable:
 
-- **Current (use this for book projects):** `mathtranslation.cls` — a
+- **Supplied book variant:** `mathtranslation.cls` — a
   `ctexbook`-based class with real `\chapter`/`\section`/`\subsection`
   hierarchy, a public build/cover/bibliography interface, and biblatex+biber
-  bibliography. This is what the user's translation projects actually use.
+  bibliography. Use it only when supplied or selected for the project; it is
+  not bundled with AI & Math Translations.
 - **Legacy (reference only):** `mathtranslations-translation-template.tex` —
   the older single-file `ctexart` template (numbering by subsection,
   `exercises`/`answers`/`longproof`, local `mybibliography`). The skill still
-  bundles this file under `assets/` as a historical reference; prefer the
-  maintained `mathtranslation.cls` for new work.
+  bundles this file and `logo.pdf` under `assets/`; it is the self-contained
+  fallback when no newer class is supplied.
 
-The class file is maintained by the user (canonical copy lives in the user's
-template directory), so inspect the *supplied* `mathtranslation.cls` instead of
+The class file is externally maintained, so inspect the *supplied* `mathtranslation.cls` instead of
 relying on memory. The profile below was derived from `mathtranslation.cls` v3.x.
 
 ## Authority
@@ -36,8 +36,8 @@ edition. Do not hard-code visible numbers in prose.
 
 The current template expects:
 
-- **XeLaTeX**, run through the project build script `tools/build.sh full`
-  (xelatex ×2 → biber → xelatex ×2). A lone `xelatex` invocation will not
+- **XeLaTeX**, run through the actual project build driver (for example,
+  `tools/build.sh full` when supplied). A lone `xelatex` invocation will not
   resolve the table of contents, cross-references, the biblatex bibliography,
   or the terminology index.
 - `mathtranslation.cls`, which wraps **`ctexbook`** — so `\part`/`\chapter`/
@@ -135,9 +135,9 @@ and `\cref` names.
 
 ### Remapping numbering to match a source book
 
-The class defaults everything to per-section numbering, but most printed books
-number theorems/problems/questions/figures **by chapter** (`X.Y`) and
-definitions **by section** (`X.M.K`). Achieve that in `main.tex` with counter
+Inspect the class defaults and the source book first. If the source numbers
+theorems/problems/questions/figures **by chapter** (`X.Y`) and
+definitions **by section** (`X.M.K`), achieve that in `main.tex` with counter
 surgery — do not edit the class:
 
 ```tex
@@ -174,6 +174,12 @@ The template requires three uniform typesetting habits:
 - Chinese prose sentences end with an ASCII `.` (not `。`), matching the
   template's punctuation policy.
 
+These conventions apply to prose, not literal code or algorithm syntax. Preserve
+English pseudocode keywords and input/output labels, and avoid Chinese
+`\algrenewcommand`, `\renewcommand{\algorithmic...}`, or `\SetKw...` keyword
+overrides. Use the source-compatible algorithm/listing setup without introducing
+conflicting packages. See [ai-code-fidelity.md](ai-code-fidelity.md).
+
 The audit script flags consecutive display-math blocks, Unicode curly quotes,
 manual numbering, and stray `。` under the `mathtranslations` profile.
 
@@ -183,18 +189,21 @@ Figure handling follows this priority, and the figures must be **clear**:
 
 1. When the source PDF is a clean **vector** PDF, re-render the figure region
    at high resolution (400 DPI) from the original and autocrop — `pymupdf`
-   (`fitz`) gives perfect clarity with no raster blur. Use the project's
+   (`fitz`) produces a raster fallback, not a lossless vector copy. If supplied, use the project's
    `tools/figcrop.py` to locate each `Fig. N.M` caption, crop its bounding box,
    and autotrim whitespace to `images/fig/fig-X-Y.png`.
 2. Redraw simple figures with ordinary TikZ; rebuild every commutative diagram,
    morphism diagram, category diagram, pullback/pushout square, and similar
    arrow-and-node diagram in a `tikzcd` environment — never as a screenshot.
-3. For crooched crops (figures whose caption sits *below* the art, or unusual
+3. For incorrect crops (figures whose caption sits *below* the art, or unusual
    boundaries), feed a hand-verified `bbox` through an override table such as
    `tools/_figoverride.json` rather than editing the source.
 
 After cropping, repoint every `\includegraphics` with
-`tools/rewire_figures.py` (back up `chapters/` first). Distinguish a real
+the project's `tools/rewire_figures.py` if available (back up `chapters/` first).
+Those crop/rewiring tools are not bundled; ordinary PDF cropping is also valid.
+Architecture graphs, flowcharts, and data plots are not commutative diagrams
+and need not use `tikzcd`. Distinguish a real
 figure caption `Fig. N.M` from an explanatory paragraph that merely begins with
 "Figure N.M …".
 
@@ -216,8 +225,8 @@ figure caption `Fig. N.M` from an explanatory paragraph that merely begins with
   assuming the environment names, numberings, or public macros. The class
   defines `problem` but **not** `question`; define `question` in `main.tex`.
 - **Verify numbering from the PDF, not the exit code.** A clean build can still
-  ship wrong numbers (e.g. a stray three-level `问题 1.4.1`). Extract text with
-  `pymupdf` and assert `定义 X.M.K`, `定理 X.Y`, `图 X.Y` patterns before
+  ship numbers that disagree with the source. Extract text with
+  `pymupdf` and verify the source edition's actual numbering before
   declaring done.
 - **Front/back matter order.** The terminology index and bibliography must come
   after `\appendix`/`\mainmatter` in the right order; `\printterminology` is
@@ -226,17 +235,16 @@ figure caption `Fig. N.M` from an explanatory paragraph that merely begins with
 ## Adoption Procedure
 
 1. Keep an untouched copy of the supplied `mathtranslation.cls` for comparison.
-2. If no class is supplied, copy the maintained `mathtranslation.cls` (and
-   `logo.pdf`) into the project; never edit the class in place for project
-   specifics — use `main.tex` and a `mycommand`-style preamble.
+2. If no class is supplied, use the bundled legacy template or obtain the requested
+   class from the user. Do not claim an unbundled class or driver is available.
+   Keep project-specific changes in `main.tex` or its preamble where feasible.
 3. Compile the unchanged project once to establish a baseline.
 4. Replace all cover metadata and keep the `\Translator 翻译及重排` credit line.
 5. Import the source structure; remap counters (above) to match the edition.
-6. Crop figures with `tools/figcrop.py`, then repoint with
-   `tools/rewire_figures.py` (back up first).
+6. Crop figures with available tools and update their references (back up first).
 7. Use `\newterm` once per indexed concept; keep long-proof and
    exercise-answer link pairs balanced.
 8. Typeset display math with `align`-family environments, ordered lists with
    `enumerate`, Chinese quotes with the TeX ligatures.
-9. Put `\printterminology` last; run `tools/build.sh full`; compare the
+9. Put `\printterminology` last; run the actual project build command; compare the
    generated PDF with both the source PDF and the expected numbering.

@@ -14,10 +14,9 @@ import sys
 
 import pymupdf
 
-import compare_eq_numbers as C
+from textlayer_eqseq import ORIG, FOLIO_OFFSET, page_tags
 
 FO = chr(92)
-FOLIO_OFFSET = 16
 DEFAULT_KEYS = ['III.8', 'VII.4', 'VIII.5', 'VIII.7', 'IX.7', 'XI.0',
                 'XI.10', 'XIII.2', 'XIII.7', 'XIV.0', 'XIV.4', 'XIV.7']
 
@@ -64,12 +63,16 @@ def headings(path):
 
 
 def main():
-    keys = sys.argv[1:] or DEFAULT_KEYS
+    if not ORIG:
+        sys.exit('Set AIMATH_ORIGINAL_PDF to the source PDF path.')
+    keys = sys.argv[1:]
+    if not keys:
+        sys.exit('Supply chapter.section keys for this yoschapter/yossection project.')
     A = aux_map()
-    od = pymupdf.open(C.ORIG)
+    od = pymupdf.open(ORIG)
     pages_txt = [norm(od[i].get_text()) for i in range(od.page_count)]
 
-    def first_hit(title, frm=20):
+    def first_hit(title, frm=0):
         t = norm(plain(title))
         if not t:
             return None
@@ -88,7 +91,10 @@ def main():
         HS = headings(path)
         chap = re.search(latex_cmd('yoschapter') + r'\s*\{' + ch + r'\}\{(.*?)\}', 
                          open(path, encoding='utf-8').read())
-        cur_title = HS.get(int(sec)) if sec.isdigit() and int(sec) > 0 else chap.group(1)
+        cur_title = HS.get(int(sec)) if sec.isdigit() and int(sec) > 0 else (chap.group(1) if chap else None)
+        if not cur_title:
+            print('   !! expected yoschapter/yossection heading not found; inspect manually')
+            continue
         nxt = None
         if sec.isdigit():
             cands = sorted(k for k in HS if k > int(sec))
@@ -99,9 +105,10 @@ def main():
             print('   next section: "%s"' % plain(nxt)[:58])
 
         start = first_hit(cur_title)
-        end = first_hit(nxt) if nxt else None
+        end = first_hit(nxt, start + 1) if nxt and start is not None else None
         if end is None:
-            end = (start + 5) if start is not None else None
+            print('   !! next boundary not found; inspect manually rather than guessing pages')
+            continue
         if start is None:
             print('   !! section start not found in original')
             continue
@@ -113,7 +120,8 @@ def main():
                  re.findall(re.escape('label{eq:' + key + '.') + r'([^}]*)\}', src)]
         ours = [(n.split('.')[-1], A.get(n, ('?', -1))[0]) for n in names]
 
-        rows = C.extract(C.ORIG, C.ORIG_XMIN, list(range(start, end)))
+        rows = [{'page': i + 1, 'num': str(tag['val']) + "'" * tag['np']}
+                for i in range(start, end) for tag in page_tags(od[i])]
         bypage = {}
         for r in rows:
             bypage.setdefault(r['page'], []).append(r['num'])

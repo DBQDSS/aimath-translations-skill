@@ -1,5 +1,13 @@
 # Attribution
 
+`aimath-translations-skill` is an independently maintained fork of
+<https://github.com/libinyam/mathtranslations-skill>, maintained at
+<https://github.com/DBQDSS/aimath-translations-skill>. It extends the upstream
+translation workflow to AI and machine learning, with code/pseudocode fidelity
+rules and related review safeguards. The upstream copyright and MIT License are
+retained. Authorization statements below describe the upstream provenance of
+the bundled assets, not a new authorization obtained by this fork.
+
 This independent Codex skill was derived from the public workflow described in:
 
 - MathTranslations, "Guide / 数学翻译指南"

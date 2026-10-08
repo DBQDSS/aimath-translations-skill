@@ -8,12 +8,18 @@ description: >-
   someone asks to batch-OCR scanned PDFs (e.g. "福昕/Adobe OCR 只能一本本做，
   能否批量 OCR 再加书签"). Do NOT rely on Foxit/Adobe built-in OCR — it is
   GUI-only and cannot be scripted.
-agent_created: true
+metadata:
+  agent_created: true
 ---
 
 # Scanned PDF -> OCR text layer -> faithful bookmarks
 
-Windows / WorkBuddy environment. Isolated python venv + onnxruntime.
+The WinRT fallback is Windows-specific; the Python OCR path needs its own dependencies.
+Historical performance figures and helper names below are examples from earlier
+projects. `ocr_batch.py`, `winocr.ps1`, and the other project helpers are not
+bundled: use them only if supplied, otherwise create the focused equivalent.
+Discover installed engines, models, fonts, and tools before choosing a route.
+Work on a copy and validate it before replacing an original within the requested scope.
 
 ## 0. Why not Foxit/Adobe built-in OCR
 Foxit PDF Editor's OCR is a GUI plugin (`plugins\OCRRecognition.fpi` +
@@ -24,8 +30,7 @@ cannot write custom bookmarks. Adobe Acrobat OCR is likewise not scriptable via 
 
 ## 1. Environment (one-time)
 ```bash
-PYV="C:/Users/asus/.workbuddy/binaries/python/envs/default/Scripts/python.exe"
-"$PYV" -m pip install -i https://pypi.org/simple --upgrade onnxruntime rapidocr pymupdf
+python -m pip install -i https://pypi.org/simple --upgrade onnxruntime rapidocr pymupdf
 ```
 - rapidocr 3.x bundles PP-OCRv6 models (`.../rapidocr/models/*.onnx`), fully offline.
 - API: `from rapidocr import RapidOCR; eng=RapidOCR(); r=eng(img);

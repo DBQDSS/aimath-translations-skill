@@ -11,7 +11,8 @@ description: >
   `\phantomsection` ordering trap that silently offsets destinations by one page, how to
   detect a borrowed anchor in `.toc`, the PyMuPDF verification loop, and the
   idempotent normalisation script for mixed legacy spellings.
-agent_created: true
+metadata:
+  agent_created: true
 ---
 
 # Audit & repair PDF bookmark / TOC anchors
@@ -22,8 +23,8 @@ agent_created: true
 unrelated location — a theorem, a proof, the previous subsection — even though the *page
 number printed in the TOC looks correct*.
 
-**Root cause.** A **starred** heading (`\subsection*{习题}`, `\section*{Bibliographie}`, …)
-is typeset with the `\@sect`-star variant: it calls neither `\refstepcounter` nor hyperref's
+**Possible root cause (class-dependent).** A **starred** heading (`\subsection*{习题}`, `\section*{Bibliographie}`, …)
+may be typeset by a custom `\@sect`-star variant that calls neither `\refstepcounter` nor hyperref's
 anchor machinery, so **it defines no destination**. The `\addcontentsline` that follows
 therefore inherits whatever `\@currentHref` was set last — normally the anchor of the
 preceding theorem / proof / subsection. hyperref then writes that foreign anchor into the
@@ -112,8 +113,9 @@ toc = doc.get_toc(simple=False)      # [level, title, page, dest]
   so match with `in`, not `==`.
 - Levels should mirror the sectioning: chapter → 1, `\section` → 2, `\subsection` and the
   exercises booklet → 3.
-- The `dest['to']` point is in **PDF native coordinates (origin bottom-left)**; y ≈ 727 on
-  A4 means ~114 pt from the top, i.e. the heading area — not the page bottom.
+- Interpret `dest['to']` in the library's page coordinate system. PyMuPDF page
+  coordinates normally use a top-left origin; account for rotation and verify
+  the target visually rather than applying raw PDF bottom-left coordinates.
 
 A clean run reads: *N entries in `.toc` / N bookmarks / 0 mismatches / 100 % `section*.N`*.
 

@@ -1,7 +1,8 @@
 ---
 name: latex-translation-fidelity-audit
-description: "Audit a re-typeset Chinese LaTeX translation of a maths book for fidelity to the original. Covers STRUCTURAL fidelity first (whole missing sections vs the original ToC; bare un-hyperlinked cross-chapter refs like §VI.7.2 / 习题~VI.6.5 / [VI.6.16]; the printed-number-vs-hyperref-anchor trap in .aux; missing or malformed per-section 习题 headings; untranslated section titles; silently dropped glyphs; stale index; FandolFang missing bold-shape fallback) and then LEXICAL/MATH fidelity (operator macros Frob/Nm, fraktur letters, residual untranslated English, digit/degree mistranslations, per-section math-cluster equivalence). Use when a reader has flagged errors, before a final delivery, or during '全面审查' of a math-translation project. Captures the original-PDF ↔ OCR-markdown ↔ translation-.tex comparison strategy, the fragile-$ balance trap (\\erratum{} embeds $), PaddleOCR artifacts, page drift, and the CRLF/heredoc landmines."
-agent_created: true
+description: "Audit Chinese LaTeX translations of AI and mathematics texts against original PDFs for missing structure, broken references, mathematical fidelity, terminology, and untranslated prose. Preserve intentional English in code, algorithms, identifiers, and literal examples; inspect scanner candidates against the source before repair."
+metadata:
+  agent_created: true
 ---
 
 # Translation-fidelity audit for a re-typeset LaTeX math book
@@ -21,44 +22,26 @@ this order, because each prong costs more than the one before it:
    section/paragraph level (NOT page level — see "Page drift" below).
 
 The bundled `scripts/` make every step reproducible. Run them with the managed
-Python: `C:/Users/asus/.workbuddy/binaries/python/versions/3.13.12/python.exe`.
+Python available in the current environment, after checking needed dependencies.
 
-## Environment facts (for this Windows / WorkBuddy setup)
+## Applicability And Protected Content
 
-- **Whether `Read` can display an image depends on the running MODEL, not on the tool or the
-  machine — probe it, never assume it either way.** Early project notes recorded an absolute claim
-  that "Read cannot render PNGs"; that was because **the authoring model at the time was text-only**,
-  mistaking its own lack of vision for an environment/tool limitation.
-  In reality, image display depends strictly on whether the running model is multimodal or text-only.
-  Both states have been observed on this very project: sessions up to 2026-09-13 ran on a text-only model
-  and got a refusal (`当前模型不支持图片`); from 2026-09-13 on a multimodal model the *same* `Read` calls render the
-  PNG fine. Rendering always works; *looking* may not. So render first, then attempt one `Read`
-  on the PNG and branch:
-  - **It renders** → multimodal model. Render and *look* whenever a diagram, an arrow direction,
-    or a display break is in question — it settles in one glance what text diffing cannot:
-    ```
-    pdftoppm -png -r 100 -f <first> -l <last> target.pdf <prefix>
-    ```
-  - **It answers `Content filtered` / `当前模型不支持图片` / refuses the binary** → text-only model.
-    Fall back to source-level + text-level evidence, and **say so explicitly** in the report
-    instead of implying a visual comparison was made.
-  Note the output naming: a **range** produces `<prefix>-<page>.png`, a **single
-  page** produces `<prefix><page>-<page>.png`. Mind the printed-page ≠ physical-page
-  offset (in the book this was learned on: original = PDF − 21, translation = PDF − 18)
-  — always render by *physical* page. Also: `\operatorname{Coker}`-style operator
-  names do **not** survive `pdftotext`, so locate a diagram by a Chinese phrase or by
-  looking at the render, never by searching for the operator name.
-- If image reading is ever unavailable, fall back to PDF **text** extraction
-  (`pymupdf`) + paragraph/section math comparison.
-- **Write Python scripts to files — never inline regex/heredocs into Bash.**
-  The bash shim strips a backslash level, so `python - <<'PY' … PY` and
-  `python -c '…\\mathfrak…'` silently corrupt regexes/macros. Always use the
-  **Write** tool for anything with a regex, a LaTeX macro, or a Windows path.
-- A readable **OCR markdown** of the original is the best comparison source:
-  PaddleOCR-VL produces one with print-page markers. But it has systematic
-  artifacts (next section). The original **PDF** is authoritative for anchoring
-  pages (extract text with `scripts/extract_pdf_text.py`).
-- Managed Python already has `pymupdf` (`import pymupdf`).
+These inherited examples describe particular book/OCR conventions. Verify the
+current chapter layout, counter model, OCR format, macros, and page mappings
+before applying them. Use bundled scripts by their actual `scripts/` paths.
+Project-specific helpers are optional, not implied dependencies.
+
+English in code and pseudocode is intentional. Preserve keywords, identifiers,
+literals, prompts, and expected outputs. Translate descriptive captions and safe
+comments only. Inspect rendered algorithm keywords; do not localize them through
+algorithm-package overrides. Residual-English scans are candidate generators,
+never instructions to eliminate all English. The main skill's
+`references/ai-code-fidelity.md` gives the shared AI/code rules.
+
+Use available PDF rendering and image-inspection tools. If visual inspection is
+unavailable, state that limitation; text extraction alone does not prove diagram
+or formula layout fidelity. Preserve file encoding and line endings, and keep
+LaTeX-heavy edits in file-backed scripts when shell quoting would be ambiguous.
 
 ## First: structural & cross-reference fidelity (cheapest check, highest yield)
 
@@ -206,7 +189,7 @@ to render on the page**.
 Standard Chinese typography convention: term definitions and conceptual emphasis in text
 and theorem bodies must use `\emph{中文术语}` (which maps to KaiTi/FandolKai or the project's
 emphasis font family), providing a distinct, beautiful glyph contrast against both SongTi and
-FangSong. Grep for `\textbf` across chapter bodies and ensure terminology emphasis is written as
+FangSong. Inspect terminology emphasis in theorem bodies using this font setup and use
 `\emph{...}`, keeping `\textbf` strictly for Western numerals/labels or display titles.
 
 
@@ -248,6 +231,7 @@ A translation must not leave English theorem-like words in the body
 (Theorem / Lemma / Proof / Remark / Corollary / Proposition / Definition /
 Example / Exercise / Chapter / Section / Appendix). Scan with
 `scripts/residual_english_scan.py <dir>`. It **excludes** hits that are:
+- inside supported code, inline-code, or algorithm environments (custom wrappers still need review),
 - inside a `%` comment,
 - a `\bibitem` reference line or a `thebibliography` block,
 - inside an intentional `\erratum{…}` correction note
@@ -366,8 +350,8 @@ A raw `$…$` extractor pulls in prose. Keep a cluster only if:
 7. `operator_macro_scan.py <project_dir>` → expect 0 error-pattern macros.
 8. `fraktur_audit.py <orig.md> <trans_dir>` → every high-count fraktur letter
    present in both; investigate any single-occurrence gap with `show_context.py`.
-9. `residual_english_scan.py <project_dir>` → expect 0 body hits (only
-   comment/bib/erratum excluded).
+9. `residual_english_scan.py <project_dir>` → review remaining prose candidates;
+   code/algorithms and intentional English are not translation defects.
 10. GREP the digit/degree hotspots (class D) for the *correct* forms.
 11. `extract_pdf_text.py` to anchor each chapter start; confirm opening text.
 12. `math_cluster_audit.py <orig.md> <trans_dir>` as a spot-check.
