@@ -31,7 +31,8 @@ mathematical, or algorithmic correctness.
 ## Build the document
 
 For the conventional fallback below, use enough XeLaTeX passes to resolve all generated data; respect the actual project driver.
-**If the project has an index (`\makeindex` / `main.idx`), it is 5 steps, not 3** — see below.
+If the project has an index, include its actual index driver and resolving passes;
+the five-step sequence below is one conventional example, not a universal count.
 
 ```powershell
 $d = "<the directory containing main.tex>"
@@ -47,51 +48,42 @@ if (Test-Path "main.bcf") { & "biber" main *> "build_biber.log" }
 - Do **not** use `-halt-on-error` while diagnosing: you want to see every error in one run.
 - Judge success on **build3**, not build1 (`Citation undefined` in pass 1 is normal).
 
-### Index step (omit only if there is no `main.idx`)
+### Index step (when the actual project needs an index processor)
 
-`texindy` must run **between** the passes that write and read `main.ind`, i.e. the real order is
-`xelatex → biber → xelatex → texindy → xelatex` (5 steps). Skipping it does **not** error — LaTeX
-silently re-uses the *previous* `main.ind`, so the printed index keeps stale/`??` page numbers and a
-"successful" build is actually wrong. **Treat a missing `texindy` step as a silent-corruption bug.**
+Run the configured processor between passes that write its input and read its
+output. For a compatible project this may be
+`xelatex → biber → xelatex → texindy → xelatex`; other projects use makeindex,
+named indices, automatic processing, or no external index step. A stale `.ind`
+can be reused without a LaTeX error, so verify the file the document actually reads.
 
-`texindy` is a Perl script and **dies on a UTF-8 locale** (`perl: warning: Setting locale failed`,
-exit code 2, no `main.ind` written). Always force the C locale for this one step:
+A locale warning or failed `texindy` run requires diagnosis of the installed
+Perl/xindy environment. UTF-8 locales are not universally unsupported. If a
+reproduction confirms an unavailable or incompatible locale, temporarily use a
+supported locale for that process while retaining the index input encoding
+(for example, `-C utf8` when supported). Save and restore any existing locale
+variables in a `finally` block; do not erase the user's previous settings.
 
-```powershell
-$env:LC_ALL="C"; $env:LANG="C"; $env:LC_CTYPE="C"
-& "texindy" -M texindy -I xelatex -C utf8 main.idx
-Remove-Item Env:LC_ALL,Env:LANG,Env:LC_CTYPE
-```
+Verify processor exit status, expected output filename, entry content and page
+numbers, then inspect the rendered index. A rerun warning alone does not prove
+staleness: check input/output content and resolving passes. If repeated passes
+produce unchanged data and correct rendered entries, stop rather than chasing a
+timestamp warning indefinitely.
 
-Verify afterwards: `main.ind` exists **and** its `\indexentry` lines carry real page numbers.
-Then confirm on the rendered index page that numbers are printed, not `??`.
+### Diagnose output-directory and path failures
 
-> **The `imakeidx` warning "Remember to run xelatex again after calling texindy" is NOT evidence that
-> the index is stale — it is timestamp-based and fires on every build**, because each `xelatex` pass
-> rewrites `main.idx` and thereby makes it newer than `main.ind`. Settle it by **content, not by the
-> warning**: hash `main.idx`, rerun `texindy` (C locale) and hash `main.ind` — if that hash is
-> unchanged, the index already matches the aux page numbers; then rerun `xelatex` and hash `main.idx`
-> again — if unchanged too, the run has converged and you stop. Do **not** enter a build loop chasing
-> this message.
+Keep the project's configured output directory when it works. For an error such
+as `I can't write on file main.log`, inspect destination existence, permissions,
+file locks, path quoting, tool versions, and encoding. Non-ASCII paths can be a
+compatibility issue in a particular installation; they are not a universal TeX
+failure. Test a controlled working-directory or ASCII-path variant only when
+it helps isolate the observed failure, without overwriting the original build.
 
-### Do NOT pass `-output-directory` when the project path is non-ASCII
-
-`xelatex -output-directory="D:\…\中文目录"` fails fatally before doing any work:
-
-```
-! I can't write on file `main.log'.
-... putenv(TEXMF_OUTPUT_DIRECTORY=…) …
-```
-
-and returns non-zero with no PDF. TeX cannot handle the non-ASCII value in the environment
-variable. **Fix: don't pass the flag at all.** Change the *working directory* instead
-(`Set-Location $d` / `subprocess.run(..., cwd=$d)`); every tool then writes to cwd by default.
-
-Independently of the non-ASCII failure, `-output-directory` is also a **silent-staleness trap**:
-it redirects the PDF/aux/TOC to the given directory while the `bookmark`/`.out` write can land
-elsewhere (or not happen), so the freshly written PDF embeds an **old bookmark tree** — the PDF and
-`.aux` get new mtimes and only `.out` stays stale. Always build with cwd = project dir and no
-`-output-directory` flag.
+Check where the engine, bibliography processor, and index driver actually read
+and write auxiliary files. Mixed directories or stale search-path results can
+produce old references or bookmarks. Resolve that mismatch through consistent
+paths and the existing build driver; removing `-output-directory` is a possible
+diagnostic workaround, not a required policy. Confirm the bookmarks in the PDF
+rather than inferring failure from a flag or a single auxiliary timestamp.
 
 ### Bundled Fallback Driver
 
@@ -126,24 +118,20 @@ A clean verdict looks like: `LaTeX Error` = 0, `Overfull/Underfull \hbox` = 0,
 > `grep -c '^!' main.log` — and require both to be 0. `-file-line-error` is the
 > whole reason the `^! ` form stops being reliable, so the two go together.
 
-`Missing character` is the one to take seriously with `fontset=none`: it means a CJK font was
-never assigned (`\setCJKsansfont` / `\setCJKmonofont` missing) and text silently vanished.
+`Missing character` requires checking the exact glyph and font in use. With
+`fontset=none`, an unassigned CJK family is one possible cause; a font's missing
+glyph coverage or an unintended fallback is another. Inspect the affected text
+and rendered page before choosing a font change.
 
-> **TRAP — `Font shape … undefined` can hide a silent *emphasis* failure.** TeX substitutes silently
-> and warns only **once per shape**, so a build reporting `errors: 0` can still be typesetting
-> something wrong. Concrete case (AJbook.cls): `\theorembodyfont{\fangsong}` puts every
-> theorem / lemma / proposition / **definition** body in FandolFang — which ships **no bold face**.
-> A CJK `\textbf{…}` inside such a body is therefore typeset at *normal* weight with no error at all;
-> the only trace is one line,
-> `LaTeX Font Warning: Font shape 'TU/FandolFang-Regular(0)/b/n' undefined`, and the defined term
-> ends up visually indistinguishable from its surrounding text.
-> **Fix by convention, not by adding a font:** in these bodies use `\emph` — under ctex it maps CJK to
-> 黑体 (`FandolHei-Bold`) and does emphasise. **Verify by font name, never by eye:** read the span out
-> of the PDF and assert the family —
-> `for l in page.get_text("dict")["blocks"]…: [s["font"] for s in l["spans"]]` — `FandolHei-Bold`
-> means emphasised, `FandolFang-Regular` means the emphasis was dropped. Cheap sweep: for each
-> fangsong-bodied environment, list every `\textbf` / `\emph` / `\bfseries` whose argument contains
-> CJK (`[\u4e00-\u9fff]`), then check those spans in the rendered PDF.
+`Font shape … undefined` can signal lost emphasis despite an otherwise successful
+build. Inspect the project's definitions of `\emph`, `\textbf`, font families,
+and any synthetic-bold settings; ctex does not guarantee that `\emph` maps to
+a particular Hei family in every setup. Preserve semantic emphasis and choose
+a remedy compatible with the actual template. Compare magnified rendered text
+with its surrounding body; PDF font-span names are supporting evidence, not a
+universal assertion that `FandolHei-Bold` is the only valid emphasis or that a
+regular family necessarily proves emphasis was lost. Recheck affected environments
+after the change.
 
 ## Visual verification (mandatory before reporting success)
 

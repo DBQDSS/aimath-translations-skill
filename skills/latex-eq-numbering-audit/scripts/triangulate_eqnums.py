@@ -103,7 +103,7 @@ def main():
     o = load_ours('_ours_eqseq.json')
     L = load_layer('_textlayer_eqseq.json')
 
-    keys = sorted(set(j) | set(m) | set(o),
+    keys = sorted(set(j) | set(m) | set(o) | set(L),
                   key=lambda k: (k.split('.')[0], int(k.split('.')[1])))
     rows = []
     for k in keys:
@@ -121,8 +121,8 @@ def main():
             verdict = 'ours-only' if om else 'n/a'
         elif not differ:
             verdict = 'agree'
-        elif not agree and len(set(votes[a] for a in differ)) == 1:
-            verdict = 'CONFLICT'             # 所有有数据的源一致反对我们
+        elif len(votes) >= 2 and not agree and len(set(votes[a] for a in differ)) == 1:
+            verdict = 'CONFLICT'             # 至少两个提取源一致反对我们，须回源核实
         elif votes.get('layer') == om:
             verdict = 'layer-ok'             # 原书文字层确认我们
         elif 'layer' in votes:
@@ -154,11 +154,11 @@ def main():
                   (r['key'], r['json'], r['mineru'], r['layer'], r['ours'], d))
         print()
 
-    show('CONFLICT  (所有有数据的源一致反对我们)', buckets['CONFLICT'])
+    show('CONFLICT  (至少两个提取源一致反对我们，须回源核实)', buckets['CONFLICT'])
     show('layer-diff (文字层反对我们 → 须人工核)', buckets['layer-diff'])
     show('unresolved (无文字层数据且其他源不一致)', buckets['unresolved'])
     if '--strong' not in sys.argv:
-        show('layer-ok  (文字层确认我们，其他源噪声)', buckets['layer-ok'])
+        show('layer-ok  (文字层与项目一致，仍须核实差异)', buckets['layer-ok'])
         show('agree', buckets['agree'])
         show('n/a / ours-only', buckets['n/a'] + buckets['ours-only'])
 

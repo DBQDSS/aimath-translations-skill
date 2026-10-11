@@ -70,11 +70,11 @@ or similar prose inside `\text{...}`. The helper supports a dry run:
 
 ```bash
 python scripts/fix_hyphen_spacing.py path/to/chapters
-python scripts/fix_hyphen_spacing.py path/to/chapters --apply
+python scripts/fix_hyphen_spacing.py path/to/chapters --apply --term "Hilbert - Schmidt"
 ```
 
-It backs up changed files and currently requires pure CRLF input. Do not normalize
-LF files merely to satisfy it; use a targeted edit preserving their existing style.
+It backs up changed files and preserves existing line endings, including LF.
+Only supply an exact --term after checking its spelling and spacing on the source page.
 Do not apply a prose spacing rewrite to code or pseudocode operators.
 
 ## Build And Compare

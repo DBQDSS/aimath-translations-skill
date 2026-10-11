@@ -1,48 +1,29 @@
-"""Print the full text of selected footnotes (by chapter + line number)."""
-import io
-import sys
+#!/usr/bin/env python3
+"""Print complete footnotes selected by source file and start line.
 
-BS = chr(92)
-D = '$'
-
-
-def find_footnotes(text):
-    needle = BS + 'footnote{'
-    out = []
-    k = 0
-    while True:
-        p = text.find(needle, k)
-        if p < 0:
-            break
-        i = p + len(needle)
-        depth = 1
-        j = i
-        while j < len(text) and depth:
-            c = text[j]
-            if c == BS:
-                j += 2
-                continue
-            if c == '{':
-                depth += 1
-            elif c == '}':
-                depth -= 1
-            j += 1
-        out.append((text[:p].count(chr(10)) + 1, text[i:j - 1]))
-        k = j
-    return out
+Usage: python fnshow.py <file.tex> <line> [line ...]
+"""
+import argparse
+from pathlib import Path
+from fndump import find_footnotes
 
 
-targets = [('ch01', 38), ('ch02', 161), ('ch03', 45), ('ch03', 978), ('ch03', 1190),
-           ('ch04', 579), ('ch06', 125), ('ch06', 486), ('ch07', 138), ('ch07', 1369),
-           ('ch02', 1342)]
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('file', type=Path)
+    parser.add_argument('lines', nargs='+', type=int)
+    args = parser.parse_args()
+    notes = dict(find_footnotes(args.file.read_text(encoding='utf-8')))
+    missing = False
+    for line in args.lines:
+        print('%s:%d' % (args.file, line))
+        if line in notes:
+            print(notes[line])
+        else:
+            print('NOT FOUND: use fndump.py to locate the actual start line')
+            missing = True
+    return int(missing)
 
-for ch, ln in targets:
-    for l, body in find_footnotes(io.open('chapters/%s.tex' % ch, encoding='utf-8').read()):
-        if l == ln:
-            print('=' * 78)
-            print('%s:%d' % (ch, ln))
-            print(body)
-            break
-    else:
-        print('=' * 78)
-        print('%s:%d  NOT FOUND' % (ch, ln))
+
+if __name__ == '__main__':
+    raise SystemExit(main())

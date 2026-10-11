@@ -14,21 +14,27 @@ globally sequential in the main book and reset+continuous across the appended pa
 Dry-run by default; use --apply to rewrite the .tex files in place.
 Usage:  python convert_hardrefs.py [--apply]   (run from the translated/ directory)
 """
-import re, sys, os
+import re, sys, os, argparse, glob
 from collections import defaultdict
+from source_guard import mask_protected, read_source, write_source
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # Default to the directory this script is run from; allow override via env if needed.
 ROOT = os.environ.get("MT_ROOT", os.getcwd())
 AUX = os.path.join(ROOT, "main.aux")
-PARTS = sorted(f for f in os.listdir(ROOT) if re.match(r"part.*\.tex$", f))
-GF = {"partgf1.tex", "partgf2.tex"}
+PARTS = []
+GF = set()  # Optional, explicitly configured continuous reference scope.
 
 label_num = {}
 if os.path.exists(AUX):
-    txt = open(AUX, encoding="utf-8", errors="ignore").read()
-    for m in re.finditer(r"\\newlabel\{([^}]*)\}\{\{([^}]*)\}\{", txt):
-        label_num[m.group(1)] = m.group(2).strip()
+    for aux_path in glob.glob(os.path.join(ROOT, '**', '*.aux'), recursive=True):
+        txt = read_source(aux_path)
+        for m in re.finditer(r"\\newlabel\{([^}]*)\}\{\{([^}]*)\}\{", txt):
+            key, number = m.group(1), m.group(2).strip()
+            if key in label_num and label_num[key] != number:
+                label_num[key] = ''  # conflicting aux data is unresolved
+            else:
+                label_num.setdefault(key, number)
 
 PREFIX_ENV = {"定理": "theorem", "命题": "proposition", "引理": "lemma",
               "推论": "corollary", "定义": "definition", "注": "remark",
@@ -37,9 +43,9 @@ PREFIX_REFC = {"定理": r"\thmref", "命题": r"\propref", "引理": r"\lemref"
                "推论": r"\corref", "定义": r"\defref", "注": r"\remref",
                "例": r"\exref", "问题": r"\probref"}
 
-RE_THM = re.compile(r"(定理|命题|引理|推论|定义|注|例|问题)\s+(\d+\.\d+)")
+RE_THM = re.compile(r"(定理|命题|引理|推论|定义|注|例|问题)\s+(\d+\.\d+)(?![\d.])")
 RE_EQ = re.compile(r"(公式|式|方程)\s*\((\d+)\)")
-RE_CHAPTER = re.compile(r"章第\s+(\d+\.\d+)")
+RE_CHAPTER = re.compile(r"章第\s+(\d+\.\d+)(?![\d.])")
 
 def strip_comment(line):
     out = []; i = 0
@@ -54,17 +60,19 @@ def strip_comment(line):
 
 def parse_file(path):
     labels = []; stack = []
-    with open(path, encoding="utf-8", errors="ignore") as fh:
-        for lineno, raw in enumerate(fh, 1):
+    if True:
+        for lineno, raw in enumerate(mask_protected(read_source(path)).splitlines(), 1):
             line = strip_comment(raw)
-            for bm in re.finditer(r"\\begin\{([^}]*)\}", line):
-                stack.append(bm.group(1))
-            for em in re.finditer(r"\\end\{([^}]*)\}", line):
-                if stack and stack[-1] == em.group(1):
-                    stack.pop()
-            for lm in re.finditer(r"\\label\{([^}]*)\}", line):
-                env = stack[-1] if stack else None
-                labels.append((lm.group(1), env, label_num.get(lm.group(1), ""), lineno))
+            for token in re.finditer(r"\\(begin|end|label)\{([^}]*)\}", line):
+                kind, value = token.groups()
+                if kind == 'begin':
+                    stack.append(value)
+                elif kind == 'end':
+                    if stack and stack[-1] == value:
+                        stack.pop()
+                else:
+                    env = stack[-1] if stack else None
+                    labels.append((value, env, label_num.get(value, ""), lineno))
     return labels
 
 def build_indexes():
@@ -85,19 +93,34 @@ def build_indexes():
     return per_file, gf_thm, gf_eq, mainbook_eq
 
 def main():
-    apply = "--apply" in sys.argv
+    global PARTS, GF
+    parser = argparse.ArgumentParser(description='Preview source-scoped references using aux printed numbers.')
+    parser.add_argument('--apply', action='store_true')
+    parser.add_argument('--files', default='*.tex', help='Project-relative file glob; review the preview before applying')
+    parser.add_argument('--scope-group', default='', help='Comma-separated files sharing one continuous reference scope')
+    args = parser.parse_args()
+    apply = args.apply
+    PARTS = sorted(os.path.relpath(f, ROOT) for f in glob.glob(os.path.join(ROOT, args.files), recursive=True))
+    GF = set(filter(None, args.scope_group.split(',')))
+    if not PARTS or not label_num:
+        parser.error('No source files or aux labels found; build the project and check --files.')
+    if not GF <= set(PARTS):
+        parser.error('--scope-group contains a file outside --files')
     per_file, gf_thm, gf_eq, mainbook_eq = build_indexes()
     total_conv = 0; total_skip = 0
+    prepared = {}
     for part in PARTS:
         in_gf = part in GF
         local_thm = defaultdict(list)
         for (name, env, printed, ln) in per_file[part]:
             if printed and env != "equation":
                 local_thm[(env, printed)].append(name)
-        raw_lines = open(os.path.join(ROOT, part), encoding="utf-8", errors="ignore").read().split("\n")
+        source = read_source(os.path.join(ROOT, part))
+        raw_lines = source.splitlines(keepends=True)
+        clean_lines = mask_protected(source, math=True).splitlines(keepends=True)
         conversions = []; skip = []
         for lineno, raw in enumerate(raw_lines, 1):
-            clean = strip_comment(raw)
+            clean = strip_comment(clean_lines[lineno - 1])
             for m in RE_THM.finditer(clean):
                 prefix, num = m.group(1), m.group(2)
                 env = PREFIX_ENV[prefix]
@@ -106,19 +129,25 @@ def main():
                 if len(cands) == 1:
                     s, e = m.start(), m.end()
                     if raw[s:e] == clean[s:e]:
-                        conversions.append((lineno, s, e, f"{PREFIX_REFC[prefix]}{{{cands[0]}}}"))
+                        conversions.append((lineno, s, e, prefix + rf"~\ref{{{cands[0]}}}"))
                     else:
                         skip.append((lineno, prefix+num, "pos-mismatch"))
                 else:
                     skip.append((lineno, prefix+num, f"{len(cands)} cands"))
             for m in RE_EQ.finditer(clean):
                 prefix, num = m.group(1), m.group(2)
-                cands = (gf_eq if in_gf else mainbook_eq).get(num, [])
+                # Numbers often reset per section/file. Never borrow a unique
+                # target from a different file without an explicit shared scope.
+                local_eq = defaultdict(list)
+                for name, env, printed, ln in per_file[part]:
+                    if env == 'equation':
+                        local_eq[printed].append(name)
+                cands = (gf_eq if in_gf else local_eq).get(num, [])
                 cands = [c for c in cands if c]
                 if len(cands) == 1:
                     s, e = m.start(), m.end()
                     if raw[s:e] == clean[s:e]:
-                        conversions.append((lineno, s, e, f"\\eqref{{{cands[0]}}}"))
+                        conversions.append((lineno, s, e, prefix + rf"~\eqref{{{cands[0]}}}"))
                     else:
                         skip.append((lineno, prefix+"("+num+")", "pos-mismatch"))
                 else:
@@ -136,6 +165,8 @@ def main():
                     print(f"    L{ln}: {tok}  [{why}]")
             total_conv += len(conversions); total_skip += len(skip)
         else:
+            if skip:
+                raise SystemExit(f'Refusing writes to {part}: unresolved or ambiguous references remain; review the preview.')
             by_line = defaultdict(list)
             for (ln, s, e, rep) in conversions:
                 by_line[ln].append((s, e, rep))
@@ -148,9 +179,10 @@ def main():
                     new_lines.append(r)
                 else:
                     new_lines.append(raw)
-            with open(os.path.join(ROOT, part), "w", encoding="utf-8") as fh:
-                fh.write("\n".join(new_lines))
+            prepared[part] = "".join(new_lines)
             total_conv += len(conversions); total_skip += len(skip)
+    for part, text in prepared.items():
+        write_source(os.path.join(ROOT, part), text)
     print(f"\n##### TOTAL convert={total_conv}  skip={total_skip}  (apply={apply})")
 
 if __name__ == "__main__":

@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "recorded_on": "2026-10-11",
+  "paths_relative_to": "repository root",
+  "network_required_for_use": false,
+  "upstream": {
+    "repository": "https://github.com/libinyam/mathtranslations-skill",
+    "repository_page_checked_on": "2026-10-11",
+    "scope": "Public repository page and its attribution only; no fresh template download or terminology database verification."
+  },
+  "assets": {
+    "origin": "Inherited bundled legacy assets; this revision preserves their bytes.",
+    "authorization": "Upstream README and inherited NOTICE state MIT authorization; no new authorization asserted.",
+    "files": [
+      {
+        "path": "assets/mathtranslations-translation-template.tex",
+        "bytes": 26370,
+        "sha256": "b2cc106209969e77878f3ba6dfe0bf050d4d38da0c68e558a96241350827531e"
+      },
+      {
+        "path": "assets/logo.pdf",
+        "bytes": 13526,
+        "sha256": "8b3839adbf870a8c5e825c9f004125816835bbb321617e619e5f589b672fc8d5"
+      },
+      {
+        "path": "LICENSE",
+        "bytes": 1113,
+        "sha256": "0ece9f2e1417dd9d03c108b3d469d9931a1ba8be2ca9004bb2547ef8037a6454"
+      }
+    ]
+  },
+  "terminology": {
+    "path": "references/terminology/terms.tsv",
+    "entries": 74,
+    "status": "All entries are editorial candidates requiring source-context review.",
+    "external_verification": false,
+    "community_database_export": false
+  },
+  "historical_records": {
+    "note": "Inherited notes recorded template inspection on 2026-08-23 and website checks on 2026-10-08. These were not repeated or independently substantiated in this revision.",
+    "archive_sha256": "4C2E5AD1C81646B4E8AD53F4B5FD5BAA7D477C749915E32CF52B5EE71F85F12E"
+  },
+  "license_note": "Root MIT license applies to repository material; it does not grant rights to translated books, website databases, or external assets."
+}

@@ -21,13 +21,16 @@ Resolution order for a bare number N in file F:
   b. else a hand-typeset (unlabeled) item listed in HAND                -> \\hyperlink{item:...}{N};
   c. else leave untouched and record it in the UNRESOLVED list.
 
-Mapping is DERIVED FROM main.aux (never hand-maintained), so printed numbers and labels
-can never drift. Dry-run by default; pass --go to write files.
+Mapping uses main.aux printed numbers; rebuild before review because aux files
+can be stale. Dry-run by default; pass --go to write reviewed files.
 """
 import re
 import sys
+from pathlib import Path
+from source_guard import mask_protected, read_source, write_source
 
-sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 
 # ---- configure per project -------------------------------------------------
 BASE = r'.'                                    # working directory (cwd by default)
@@ -68,18 +71,29 @@ def build_by_chap(aux_text):
         if not m:
             continue
         rest = m.group(2)
-        pm = re.match(r'^(viii|vii|vi|v|iv|iii|ii)\.(.+)$', rest)
+        pm = re.match(r'^([ivxlcdm]+)\.(.+)$', rest)
         ch, item = (pm.group(1), pm.group(2)) if pm else ('i', rest)
-        by_chap.setdefault(ch, {})[item] = lab
+        # The label spelling is only a chapter hint. The printed number comes
+        # from aux field 1, never from a label suffix or a hyperref anchor.
+        num = num.strip()
+        items = by_chap.setdefault(ch, {})
+        if num in items and items[num] != lab:
+            items[num] = None  # ambiguous: never choose the last label silently
+        else:
+            items.setdefault(num, lab)
     return by_chap
 
 
 def main():
     go = '--go' in sys.argv
-    by_chap = build_by_chap(open(BASE + '/main.aux', encoding='utf-8', errors='replace').read())
+    by_chap = build_by_chap(read_source(Path(BASE) / 'main.aux'))
 
     def resolve(fn, n, suf=''):
-        lab = by_chap.get(CHAP_OF[fn], {}).get(n)
+        chapter = by_chap.get(CHAP_OF[fn], {})
+        if n in chapter and chapter[n] is None:
+            unresolved.append((fn, n + ' [ambiguous aux labels]'))
+            return None
+        lab = chapter.get(n)
         if lab:
             return '\\ref{%s}%s' % (lab, suf)
         h = HAND.get(fn, {}).get(n)
@@ -106,6 +120,7 @@ def main():
                 return m.group(0)
             r = resolve(fn, mm.group(1), mm.group(2))
             if r is None:
+                unresolved.append((fn, m.group(0)))
                 return m.group(0)
             out.append(r)
         res = '(' + ', '.join(out) + ')'
@@ -115,6 +130,7 @@ def main():
     def jian(fn, m, parens):
         r = resolve(fn, m.group(2), m.group(3))
         if r is None:
+            unresolved.append((fn, m.group(0)))
             return m.group(0)
         res = '(' + m.group(1) + ' ' + r + ')' if parens else m.group(1) + ' ' + r
         changelog.append((fn, 'jian', m.group(0), res))
@@ -122,18 +138,26 @@ def main():
 
     out_files = {}
     for fn in FILES:
-        text = open(BASE + '/' + fn, encoding='utf-8', newline='').read()
+        text = read_source(Path(BASE) / fn)
         for old, new, cnt in EXACT.get(fn, []):
-            c = text.count(old)
+            protected = mask_protected(text)
+            matches = list(re.finditer(re.escape(old), protected))
+            c = len(matches)
             if c != cnt:
                 report.append('!! %s EXACT count %d (want %d): %r' % (fn, c, cnt, old))
+                continue
             else:
                 changelog.append((fn, 'exact', old, new))
-            text = text.replace(old, new)
-        text = MULTI.sub(lambda m: multi(fn, m), text)
-        text = JIANP.sub(lambda m: jian(fn, m, True), text)
-        text = JIANB.sub(lambda m: jian(fn, m, False), text)
-        text = SINGLE.sub(lambda m: single(fn, m), text)
+            for match in reversed(matches):
+                text = text[:match.start()] + new + text[match.end():]
+        for pattern, callback in ((MULTI, multi),
+                                  (JIANP, lambda fn, m: jian(fn, m, True)),
+                                  (JIANB, lambda fn, m: jian(fn, m, False)),
+                                  (SINGLE, single)):
+            masked = mask_protected(text, math=True)
+            for match in reversed(list(pattern.finditer(masked))):
+                replacement = callback(fn, match)
+                text = text[:match.start()] + replacement + text[match.end():]
         out_files[fn] = text
 
     lines = list(report) + ['===== CHANGES =====']
@@ -149,8 +173,10 @@ def main():
     print('\nchanges:', len(changelog), ' unresolved:', len(unresolved), ' warnings:', len(report))
 
     if go:
+        if report or unresolved:
+            raise SystemExit('Refusing writes: resolve count mismatches and ambiguous/unresolved references first.')
         for fn in FILES:
-            open(BASE + '/' + fn, 'w', encoding='utf-8', newline='').write(out_files[fn])
+            write_source(Path(BASE) / fn, out_files[fn])
         print('*** WROTE', len(FILES), 'files ***')
     else:
         print('(dry run; pass --go to write)')

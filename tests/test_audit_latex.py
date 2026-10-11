@@ -130,7 +130,7 @@ class AuditLatexTests(unittest.TestCase):
             self.assertEqual([], errors)
             self.assertEqual([], warnings)
 
-    def test_mathtranslations_profile_flags_typesetting_rules(self) -> None:
+    def test_mathtranslations_profile_reports_layout_candidates_without_imposing_punctuation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "main.tex").write_text(
@@ -151,8 +151,8 @@ class AuditLatexTests(unittest.TestCase):
             self.assertTrue(
                 any("consecutive display-math" in item for item in warnings)
             )
-            self.assertTrue(any("TeX `` and ''" in item for item in warnings))
-            self.assertTrue(any("enumerate" in item for item in warnings))
+            self.assertFalse(any("TeX `` and ''" in item for item in warnings))
+            self.assertTrue(any("manually numbered" in item for item in warnings))
 
     def test_mathtranslations_profile_reports_drift(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -173,7 +173,7 @@ class AuditLatexTests(unittest.TestCase):
 
             self.assertTrue(any("terminology key" in item for item in errors))
             self.assertTrue(any("long-proof key" in item for item in errors))
-            self.assertTrue(any("ASCII '.'" in item for item in warnings))
+            self.assertFalse(any("ASCII '.'" in item for item in warnings))
             self.assertTrue(any("XeLaTeX" in item for item in warnings))
             self.assertTrue(any("printterminology" in item for item in warnings))
 

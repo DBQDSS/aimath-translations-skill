@@ -58,7 +58,7 @@ match; do not add Chinese keyword redefinitions such as
 `\SetKw{KwRet}{返回}`. Check custom wrappers and class-level overrides as well.
 
 For a source algorithm headed `Algorithm 1 Annealed Langevin Dynamics`, a
-Chinese descriptive caption can be `Algorithm 1 退火朗之万动力学`. Its body must
+Chinese descriptive caption can be `Algorithm 1 退火 Langevin 动力学`. Its body must
 retain `Input:`, `for ... do`, `end for`, and `Output:`. Explanatory comments may
 be Chinese; input/output descriptions and prose steps must also be Chinese, while
 every symbol, loop bound, assignment, and update remains faithful.
@@ -73,6 +73,11 @@ translate a book. Preserve line-reference labels and algorithm/listing counters.
 
 ## AI Mathematics And Terminology
 
+- Apply [terminology-policy.md](terminology-policy.md): candidate glossaries and
+  prior project choices require a source-sense and evidence check. Preserve all
+  person-name components as printed, including accents and derived forms, in
+  named methods, optimizers, distributions, captions, and index entries. This
+  does not authorize changing API spellings, identifiers, or literal examples.
 - Preserve tensor shapes, index ranges, broadcasting, axis order, transpose vs.
   conjugate transpose, scalar/vector distinctions, and batch/sample notation.
 - Compare expectation distributions, conditioning, loss signs, normalization
@@ -123,7 +128,7 @@ distinguished from the author's text.
    conditions, and comments for untranslated human-language text, separately from
    checking its protected tokens. Treat prose scanners as candidate generators.
    Code, pseudocode syntax, identifiers,
-   bibliography titles, dataset names, and intentional bilingual terms are allowed
+   bibliography titles, person names, dataset names, and intentional bilingual terms are allowed
    English. Do not apply a global "remove residual English" rewrite.
 5. Report the scope and evidence of code/algorithm review, any custom environments
    requiring manual inspection, untranslated embedded image labels, and unresolved

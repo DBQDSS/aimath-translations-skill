@@ -7,12 +7,15 @@ Usage:
 import io
 import glob
 import sys
+import re
 
 BS = chr(92)  # one backslash
 
 
 def find_footnotes(text):
     """Return [(lineno, body)] for every balanced-footnote in text."""
+    protected = re.compile(r'(?<!\\)%[^\r\n]*|\\begin\{(?P<env>verbatim\*?|Verbatim\*?|lstlisting|minted|algorithm\*?|algorithmic)\}.*?\\end\{(?P=env)\}', re.S)
+    text = protected.sub(lambda m: re.sub(r'[^\r\n]', ' ', m.group(0)), text)
     needle = BS + 'footnote{'
     out = []
     k = 0
@@ -33,6 +36,8 @@ def find_footnotes(text):
             elif c == '}':
                 depth -= 1
             j += 1
+        if depth:
+            raise ValueError('Unclosed footnote at line %d' % (text[:p].count('\n') + 1))
         out.append((text[:p].count(chr(10)) + 1, text[i:j - 1]))
         k = j
     return out
@@ -45,7 +50,10 @@ def has_math(body):
 def main():
     show_all = '--all' in sys.argv
     total = maths = 0
-    for f in sorted(glob.glob('chapters/ch0*.tex')):
+    files = [arg for arg in sys.argv[1:] if arg != '--all'] or sorted(glob.glob('chapters/*.tex'))
+    if not files:
+        raise SystemExit('No TeX files found; supply source file paths.')
+    for f in files:
         for ln, body in find_footnotes(io.open(f, encoding='utf-8').read()):
             total += 1
             hm = has_math(body)

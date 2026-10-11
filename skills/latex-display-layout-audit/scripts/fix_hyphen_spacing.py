@@ -14,20 +14,23 @@ Without --apply it is a dry run.  Backs up every touched file to
     <chapters_dir>/../archive/chapters_backup/<date>_before_hyphen_fix/
 and preserves CRLF exactly.
 """
-import re, os, sys, shutil, datetime
+import re, os, sys, shutil, datetime, argparse
 
 PAT = re.compile(r'(\\text\{[^}]*?) - ([^}]*?\})')
 
 
 def main():
-    chapters = 'chapters'
-    apply_ = '--apply' in sys.argv
-    args = [a for a in sys.argv[1:] if not a.startswith('--')]
-    if args:
-        chapters = args[0]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('chapters', nargs='?', default='chapters')
+    parser.add_argument('--apply', action='store_true')
+    parser.add_argument('--term', action='append', default=[], help='Exact spaced term verified in the source PDF, e.g. Hilbert - Schmidt')
+    args = parser.parse_args()
+    chapters, apply_ = args.chapters, args.apply
+    if apply_ and not args.term:
+        parser.error('--apply requires at least one source-verified --term')
     root = os.path.dirname(os.path.abspath(chapters))
     bk = os.path.join(root, 'archive', 'chapters_backup',
-                      datetime.date.today().isoformat() + '_before_hyphen_fix')
+                      datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f') + '_before_hyphen_fix')
 
     total = 0
     for name in sorted(os.listdir(chapters)):
@@ -37,9 +40,27 @@ def main():
         raw = open(path, 'rb').read()
         if b' - ' not in raw:
             continue
-        assert raw.count(b'\n') - raw.count(b'\r\n') == 0, '%s is not pure CRLF' % name
         text = raw.decode('utf-8')
-        new, n = PAT.subn(r'\1-\2', text)
+        n = 0
+        protected = re.compile(r'(?<!\\)%[^\r\n]*|\\begin\{(?P<env>verbatim|Verbatim|lstlisting|minted|algorithm|algorithmic)\}.*?\\end\{(?P=env)\}', re.S)
+        spans = [match.span() for match in protected.finditer(text)]
+        new = text
+        for match in reversed(list(PAT.finditer(text))):
+            if any(start <= match.start() < end for start, end in spans):
+                continue
+            # Apply exact verified phrases only: never close a subtraction.
+            if apply_ and not any(term in match.group(0) for term in args.term):
+                continue
+            candidate = match.group(0)
+            replacement = candidate
+            if apply_:
+                for term in args.term:
+                    replacement = replacement.replace(term, term.replace(' - ', '-'))
+            else:
+                replacement = match.group(1) + '-' + match.group(2)
+            if replacement != candidate:
+                n += 1
+                new = new[:match.start()] + replacement + new[match.end():]
         if n == 0:
             continue
         for m in PAT.finditer(text):

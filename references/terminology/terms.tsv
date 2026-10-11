@@ -1,0 +1,75 @@
+source_term	candidate_zh	sense	status	evidence	note
+compact	紧 / 紧致	topology	candidate	local-editorial; no per-entry external verification	Choose according to the defined object and project convention (e.g. 紧空间, 紧致性); neither candidate is a universal replacement. Do not use the everyday sense of compact.
+complete	完备	metric space	candidate	local-editorial; no per-entry external verification	Distinguish completeness from compactness.
+connected	连通	topology	candidate	local-editorial; no per-entry external verification	Distinguish path-connected.
+path-connected	道路连通	topology	candidate	local-editorial; no per-entry external verification	Follow a deliberate project choice such as 路径连通 consistently.
+continuous	连续	analysis and topology	candidate	local-editorial; no per-entry external verification	Preserve the source notion of continuity.
+uniformly continuous	一致连续	analysis	candidate	local-editorial; no per-entry external verification	Do not omit the uniform qualifier.
+measurable	可测	measure theory	candidate	local-editorial; no per-entry external verification	Keep the relevant sigma-algebras explicit.
+sigma-algebra	σ-代数	measure theory	candidate	local-editorial; no per-entry external verification	Retain mathematical notation in LaTeX.
+measure	测度	measure theory	candidate	local-editorial; no per-entry external verification	Not measurement or empirical evaluation.
+almost everywhere	几乎处处	measure theory	candidate	local-editorial; no per-entry external verification	Preserve the underlying measure.
+almost surely	几乎必然	probability	candidate	local-editorial; no per-entry external verification	Not merely with high probability.
+convergence in probability	依概率收敛	probability	candidate	local-editorial; no per-entry external verification	Distinct from almost-sure convergence.
+weak convergence	弱收敛	probability or functional analysis	candidate	local-editorial; no per-entry external verification	Check the source definition and ambient space.
+inner product	内积	linear algebra	candidate	local-editorial; no per-entry external verification	Distinguish bilinear and sesquilinear conventions.
+norm	范数	linear algebra and analysis	candidate	local-editorial; no per-entry external verification	Retain the exact norm type.
+operator norm	算子范数	linear algebra and analysis	candidate	local-editorial; no per-entry external verification	Not the Frobenius norm.
+Frobenius norm	Frobenius 范数	matrix analysis	candidate	local-editorial; no per-entry external verification	Preserve the proper name consistently.
+eigenvalue	特征值	linear algebra	candidate	local-editorial; no per-entry external verification	Preserve multiplicities.
+eigenvector	特征向量	linear algebra	candidate	local-editorial; no per-entry external verification	Preserve normalization assumptions.
+positive definite	正定	matrix analysis	candidate	local-editorial; no per-entry external verification	Distinguish positive semidefinite.
+positive semidefinite	半正定	matrix analysis	candidate	local-editorial; no per-entry external verification	Do not drop the semidefinite qualifier.
+convex	凸	convex analysis	candidate	local-editorial; no per-entry external verification	Keep the object being described explicit.
+strongly convex	强凸	convex analysis	candidate	local-editorial; no per-entry external verification	Retain its constant and convention.
+log-concave	对数凹	probability and convex analysis	candidate	local-editorial; no per-entry external verification	Not log-convex.
+Lipschitz continuous	Lipschitz 连续	analysis	candidate	local-editorial; no per-entry external verification	Retain the constant, norm, and local/global qualifier.
+gradient	梯度	calculus	candidate	local-editorial; no per-entry external verification	Distinguish gradients from literal API names.
+Hessian	Hessian 矩阵	calculus	candidate	local-editorial; no per-entry external verification	Retain the differentiation variables and axis order. Do not add 矩阵 if the source means a Hessian operator or tensor.
+expectation	期望	probability	candidate	local-editorial; no per-entry external verification	Preserve conditioning and the distribution.
+conditional expectation	条件期望	probability	candidate	local-editorial; no per-entry external verification	Retain the conditioning sigma-algebra or variable.
+variance	方差	probability	candidate	local-editorial; no per-entry external verification	Distinguish standard deviation.
+covariance	协方差	probability	candidate	local-editorial; no per-entry external verification	Preserve scalar/matrix distinctions.
+probability density	概率密度	probability	candidate	local-editorial; no per-entry external verification	Do not replace density with probability mass.
+likelihood	似然	statistics	candidate	local-editorial; no per-entry external verification	Not probability as a generic concept.
+log-likelihood	对数似然	statistics	candidate	local-editorial; no per-entry external verification	Preserve normalization and sign.
+estimator	估计量	statistics	candidate	local-editorial; no per-entry external verification	Distinguish an estimator from its realized estimate.
+estimate	估计值	statistics	candidate	local-editorial; no per-entry external verification	Choose the verbal translation 估计 when used as a verb.
+unbiased estimator	无偏估计量	statistics	candidate	local-editorial; no per-entry external verification	Preserve the distribution defining unbiasedness.
+independent and identically distributed	独立同分布	probability	candidate	local-editorial; no per-entry external verification	Both independence and identical distribution matter.
+proposal distribution	提议分布	Monte Carlo sampling	candidate	local-editorial; no per-entry external verification	Use a documented project alternative consistently.
+rejection sampling	拒绝采样	Monte Carlo sampling	candidate	local-editorial; no per-entry external verification	Translate prose steps, not syntax keywords.
+importance sampling	重要性采样	Monte Carlo sampling	candidate	local-editorial; no per-entry external verification	Preserve the weight normalization convention.
+Markov chain	Markov 链	probability	candidate	local-editorial; no per-entry external verification	Keep discrete/continuous time distinctions. Preserve the source spelling of the name.
+transition kernel	转移核	probability	candidate	local-editorial; no per-entry external verification	Preserve conditional argument order.
+stationary distribution	平稳分布	Markov processes	candidate	local-editorial; no per-entry external verification	Distinguish a stationary process from a distribution.
+mixing time	混合时间	Markov chains	candidate	local-editorial; no per-entry external verification	Retain the metric and tolerance.
+total variation distance	总变差距离	probability	candidate	local-editorial; no per-entry external verification	Preserve the source factor convention.
+relative entropy	相对熵	information theory	candidate	local-editorial; no per-entry external verification	Preserve argument order; note relation to KL divergence.
+score	得分	gradient of log density	candidate	local-editorial; no per-entry external verification	Confirm the source definition; not an evaluation score.
+score function	得分函数	statistics and diffusion models	candidate	local-editorial; no per-entry external verification	Record the differentiation variable from the source. Parameter gradients and data gradients are different senses; check the variable.
+score	评分	evaluation metric	candidate	local-editorial; no per-entry external verification	This sense differs from the gradient of log density.
+diffusion model	扩散模型	generative modeling	candidate	local-editorial; no per-entry external verification	Preserve the source process and time convention.
+denoising	去噪	generative modeling	candidate	local-editorial; no per-entry external verification	Preserve the source estimator and noise level.
+forward process	前向过程	diffusion models	candidate	local-editorial; no per-entry external verification	Keep source direction and time indexing.
+reverse process	反向过程	diffusion models	candidate	local-editorial; no per-entry external verification	Not necessarily an exact reverse-time kernel.
+training	训练	machine learning	candidate	local-editorial; no per-entry external verification	Distinguish evaluation and inference.
+inference	推断	statistical inference	candidate	local-editorial; no per-entry external verification	Not automatically prediction.
+inference	推理	model execution	candidate	local-editorial; no per-entry external verification	Follow source context and project terminology.
+prediction	预测	machine learning	candidate	local-editorial; no per-entry external verification	Distinguish inference when the source does.
+loss function	损失函数	machine learning	candidate	local-editorial; no per-entry external verification	Preserve minimization/maximization and signs.
+objective function	目标函数	optimization	candidate	local-editorial; no per-entry external verification	Do not equate with loss without source support.
+regularization	正则化	statistics and optimization	candidate	local-editorial; no per-entry external verification	Distinguish matrix regularization and numerical stabilization.
+hyperparameter	超参数	machine learning	candidate	local-editorial; no per-entry external verification	Retain source values and schedules.
+batch size	批量大小	machine learning	candidate	local-editorial; no per-entry external verification	Distinguish batches from individual samples.
+learning rate	学习率	optimization	candidate	local-editorial; no per-entry external verification	Retain the update schedule.
+step size	步长	numerical methods and sampling	candidate	local-editorial; no per-entry external verification	Do not assume it is a training learning rate.
+attention mechanism	注意力机制	neural networks	candidate	local-editorial; no per-entry external verification	Retain axes, masks, and normalization.
+embedding	嵌入	learned representation	candidate	local-editorial; no per-entry external verification	Confirm whether the source instead uses a mathematical embedding.
+embedding	嵌入	topology or geometry	candidate	local-editorial; no per-entry external verification	Preserve the precise mathematical definition.
+benchmark	基准测试	empirical evaluation	candidate	local-editorial; no per-entry external verification	Preserve a named benchmark's identifier.
+ablation study	消融实验	machine learning	candidate	local-editorial; no per-entry external verification	Preserve the removed component and comparison conditions.
+Cauchy sequence	Cauchy 列	analysis	candidate	local-editorial; no per-entry external verification	Illustrates source-name preservation only; retain the spelling and derived form actually printed in the source.
+Fréchet derivative	Fréchet 导数	functional analysis	candidate	local-editorial; no per-entry external verification	Illustrates source-name preservation only; retain the spelling and derived form actually printed in the source.
+Gaussian distribution	Gaussian 分布	probability	candidate	local-editorial; no per-entry external verification	Illustrates source-name preservation only; retain the spelling and derived form actually printed in the source.
+Bayesian inference	Bayesian 推断	statistics	candidate	local-editorial; no per-entry external verification	Illustrates source-name preservation only; retain the spelling and derived form actually printed in the source.

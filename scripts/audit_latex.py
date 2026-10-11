@@ -46,7 +46,8 @@ HARDCODED_REFERENCE_RE = re.compile(
     r"\s*[~ ]*(?:第\s*)?\(?\d+(?:\.\d+){0,3}\)?"
 )
 LOG_PATTERNS = (
-    ("error", re.compile(r"^! (?:LaTeX|Package|Class)? ?Error", re.IGNORECASE)),
+    ("error", re.compile(r"^! ", re.IGNORECASE)),
+    ("error", re.compile(r"^.+\.(?:tex|cls|sty):\d+: (?!.*Warning)", re.IGNORECASE)),
     ("error", re.compile(r"Undefined control sequence", re.IGNORECASE)),
     ("error", re.compile(r"Emergency stop", re.IGNORECASE)),
     ("error", re.compile(r"Fatal error", re.IGNORECASE)),
@@ -54,7 +55,8 @@ LOG_PATTERNS = (
     ("warning", re.compile(r"Citation .+ undefined", re.IGNORECASE)),
     ("warning", re.compile(r"multiply defined", re.IGNORECASE)),
     ("warning", re.compile(r"Rerun to get cross-references right", re.IGNORECASE)),
-    ("warning", re.compile(r"Overfull \\\\hbox", re.IGNORECASE)),
+    ("warning", re.compile(r"Overfull \\hbox", re.IGNORECASE)),
+    ("warning", re.compile(r"Missing character", re.IGNORECASE)),
 )
 NEWTERM_RE = re.compile(
     r"\\newterm\s*\{([^{}]+)\}\s*\{([^{}]+)\}\s*\{([^{}]+)\}"
@@ -174,11 +176,7 @@ def parse_args() -> argparse.Namespace:
 
 def is_excluded(path: Path) -> bool:
     parts = tuple(part.lower() for part in path.parts)
-    # Bundled template masters are reference assets, not translated project text.
-    resource_path = ("mathtranslations", "templates", "legacy")
-    return (any(part in EXCLUDED_DIRS for part in parts)
-            or any(parts[i:i + len(resource_path)] == resource_path
-                   for i in range(len(parts) - len(resource_path) + 1)))
+    return any(part in EXCLUDED_DIRS for part in parts)
 
 
 def collect_files(root: Path, suffix: str) -> list[Path]:
@@ -192,10 +190,7 @@ def collect_files(root: Path, suffix: str) -> list[Path]:
 
 
 def read_text(path: Path) -> str:
-    try:
-        return path.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        return path.read_text(encoding="utf-8-sig", errors="replace")
+    return path.read_text(encoding="utf-8-sig")
 
 
 def strip_comments(text: str) -> str:
@@ -265,23 +260,12 @@ def audit_mathtranslations_profile(
         manual_numbering_run = 0
         prose = mask_code(active, algorithms=True)
         for number, line in enumerate(prose.splitlines(), start=1):
-            if "。" in line:
-                warnings.append(
-                    f"{display}:{number}: MathTranslations prose uses ASCII '.' "
-                    "for sentence endings; found '。'"
-                )
-            for quote_match in CURLY_QUOTE_RE.finditer(line):
-                warnings.append(
-                    f"{display}:{number}: MathTranslations quotes use TeX "
-                    f"`` and '' markers; found {quote_match.group(0)!r}"
-                )
-                break
             if MANUAL_NUMBERING_LINE_RE.match(line):
                 manual_numbering_run += 1
                 if manual_numbering_run == 2:
                     warnings.append(
                         f"{display}:{number}: manually numbered list found; "
-                        "use the enumerate environment instead"
+                        "review numbering against the source before changing it"
                     )
             else:
                 manual_numbering_run = 0
@@ -289,8 +273,7 @@ def audit_mathtranslations_profile(
         for match in CONSECUTIVE_DISPLAY_MATH_RE.finditer(prose):
             warnings.append(
                 f"{display}:{line_number(active, match.start())}: consecutive "
-                "display-math blocks; use a single align/aligned/align* "
-                "environment instead"
+                "display-math blocks; review source grouping and rendered spacing"
             )
 
     raw_text = "\n".join(raw_parts)
@@ -574,7 +557,11 @@ def audit(
 
 def main() -> int:
     args = parse_args()
-    errors, warnings = audit(args.path.resolve(), profile=args.profile)
+    try:
+        errors, warnings = audit(args.path.resolve(), profile=args.profile)
+    except (UnicodeError, OSError) as error:
+        print(f"ERROR: Unable to read project without data loss: {error}")
+        return 1
 
     for message in errors:
         print(f"ERROR: {message}")

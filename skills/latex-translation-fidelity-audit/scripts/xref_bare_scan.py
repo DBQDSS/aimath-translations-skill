@@ -39,10 +39,11 @@ import json
 import os
 import re
 import sys
+from source_guard import mask_protected, read_source, write_source
 
 NUM = r'(?:XIII|XIV|XV|VIII|III|XII|VII|IX|XI|VI|IV|V|II|X|I)'
 PAT = re.compile(r'(?P<pre>§\s*|\\S~?\s*)?'
-                 r'(?P<num>(?<![A-Za-z0-9.\\.])' + NUM + r'\.\d+(?:\.\d+)?)')
+                 r'(?P<num>(?<![A-Za-z0-9.\\.])' + NUM + r'\.\d+(?:\.\d+)?)(?![A-Za-z0-9.])')
 
 # never touch these: their braces contain labels/keys, not prose
 MASK = re.compile(r'\\(?:index|label|ref|cref|Cref|eqref|cite|citeauthor|citeyear'
@@ -57,7 +58,8 @@ NEAR_EX = re.compile(r'(?:习题|练习|Exercises?)\s*~?|\\ref\{[a-z]*ex:')
 
 def mask_regions(text):
     n = len(text)
-    m = [False] * n
+    protected = mask_protected(text, math=True)
+    m = [a != b for a, b in zip(text, protected)]
     for mm in MASK.finditer(text):
         i = text.find('{', mm.start())
         if i < 0:
@@ -115,18 +117,16 @@ def main():
             return ('thm', key, THM[key]) if key in THM else (None, None, None)
         if MARK_EX.search(before):
             return ('prob', key, PROB[key]) if key in PROB else (None, None, None)
-        if in_br:
-            return ('prob', key, PROB[key]) if key in PROB else (None, None, None)
-        if NEAR_EX.search(before[-80:]):
-            return ('prob', key, PROB[key]) if key in PROB else (None, None, None)
-        for kind, m in (('subsec', SUB), ('thm', THM), ('prob', PROB)):
-            if key in m:
-                return kind, key, m[key]
+        # Brackets and neighbouring references do not prove target type.
+        candidates = [(kind, key, mapping[key]) for kind, mapping in
+                      (('subsec', SUB), ('thm', THM), ('prob', PROB)) if mapping.get(key)]
+        if len(candidates) == 1:
+            return candidates[0]
         return None, None, None
 
     report = []
     for f in sorted(glob.glob(os.path.join(root, a.tex_glob))):
-        text = open(f, encoding='utf-8').read()
+        text = read_source(f)
         mask = mask_regions(text)
         for mm in PAT.finditer(text):
             if mask[mm.start('num')]:
@@ -162,6 +162,8 @@ def main():
 
     if a.mode != 'apply':
         return
+    if bad:
+        sys.exit('Refusing writes: ambiguous/unresolved candidates require source review.')
 
     by_file = {}
     for r in report:
@@ -170,19 +172,12 @@ def main():
     changed = 0
     for fn, items in by_file.items():
         path = os.path.join(root, fn)
-        text = open(path, encoding='utf-8').read()
+        text = read_source(path)
         for r in sorted(items, key=lambda x: -x[2]):
             text = text[:r[2]] + r[9] + text[r[3]:]
             changed += 1
-        # keep CRLF (a plain open(...,'w') would flatten it)
-        b = text.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
-        open(path, 'wb').write(b.encode('utf-8'))
+        write_source(path, text)
     print('\nrewrote %d reference(s)' % changed)
-    for f in sorted(glob.glob(os.path.join(root, a.tex_glob))):
-        b = open(f, 'rb').read()
-        c = b.count(b'\r\n')
-        if b.count(b'\n') - c:
-            print('  !! %s: LF-only lines present' % os.path.basename(f))
 
 
 if __name__ == '__main__':

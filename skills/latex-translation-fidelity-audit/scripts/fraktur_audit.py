@@ -44,10 +44,10 @@ def main():
         print("   %s   |  %4d |  %4d" % (L, o.get(L, 0), t.get(L, 0)))
     only_o = {L: o[L] for L in o if L not in t}
     only_t = {L: t[L] for L in t if L not in o}
-    print("\n-- only in original  (usually OCR artifact; verify) --", only_o)
-    print("-- only in translation (real gap if high count) --------", only_t)
-    print("\nNOTE: a single-occurrence 'only-original' letter is almost always an OCR")
-    print("misread (\\mathfrak{K} -> \\Re(s)). Check context before flagging.")
+    print("\n-- only in original (source-page candidates) --", only_o)
+    print("-- only in translation (source-page candidates) --", only_t)
+    print("\nCounts can differ because of OCR, macros, scope, or a translation defect.")
+    print("Inspect the original glyph and matching passage before changing notation.")
 
 if __name__ == "__main__":
     main()

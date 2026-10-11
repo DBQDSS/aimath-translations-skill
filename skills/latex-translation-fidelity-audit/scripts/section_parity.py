@@ -30,6 +30,7 @@ import glob
 import os
 import re
 import sys
+from source_guard import mask_protected
 
 SECTION = re.compile(r'\\section\*?\{')
 SUBSECTION = re.compile(r'\\subsection\*?\{')
@@ -83,7 +84,7 @@ def main():
     print('-' * 82)
 
     for f in files:
-        text = open(f, encoding='utf-8', errors='replace').read()
+        text = mask_protected(open(f, encoding='utf-8').read())
         name = os.path.basename(f)
         # split the file at every real \section, keep the title for reporting
         marks = []
@@ -103,7 +104,7 @@ def main():
             if probs == 0:
                 continue
             has_head = bool(ADD_TOC.search(body)) or bool(HEAD_TEXT.search(
-                ''.join(m.group(0) for m in ANY_HEADING.finditer(body))))
+                ' '.join(title_of(body, m) for m in ANY_HEADING.finditer(body))))
             n_blk += 1
             if not has_head:
                 n_headless += 1
@@ -111,11 +112,11 @@ def main():
                                 % (name, (title or '?')[:34], probs))
             elif not PHANTOM.search(body):
                 problems.append('%s  §"%s"  exercise heading without \\phantomsection '
-                                '(bookmark/TOC anchor will be wrong)'
+                                '(candidate: check class-generated destinations)'
                                 % (name, (title or '?')[:34]))
 
         key = re.search(r'ch(\d+)', name)
-        key = key.group(1) if key else '?'
+        key = str(int(key.group(1))) if key else '?'
         flag = ''
         if key in expect:
             flag = '  expect=%d %s' % (expect[key],

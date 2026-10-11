@@ -26,9 +26,12 @@ numbering. This skill is the safe, auditable recipe.
 
 ## Step 0 — Identify the target and the old style
 
-1. Confirm the reference class: `md5`(or normalized content) of the target `mathtranslation.cls`.
-   **Compare with line endings normalized** (`b.replace(b'\r\n', b'\n')`) — a raw md5 mismatch is
-   usually just CRLF vs LF (699 lines ⇒ 699-byte delta), NOT a content difference.
+1. Inspect the target `mathtranslation.cls`, declared version, and actual interface.
+   Record a hash for file identity, then compare content with the supplied reference
+   when available. A raw hash mismatch can reflect line endings or substantive
+   changes; do not infer its cause from the hash. Compare both raw and line-ending-
+   normalized content (`b.replace(b'\r\n', b'\n')`) to establish which differences
+   are present. A remembered line count or byte delta is not version evidence.
 2. Grep the old project for the old-template fingerprints:
    `\ChapterSectionLabel`, `\sectionbreak`, `mybibliography`, `\chapter` absent, `ctexart`.
 
@@ -58,9 +61,12 @@ Because the old `\section` *rendered* as a chapter, shift everything down one le
 | `\subsubsection` | `\subsection` |
 | `\addcontentsline{toc}{section}` | `\addcontentsline{toc}{chapter}` |
 
-Do it as a single regex pass, then **prove it lossless**: apply the *inverse* map to the new files
-and diff against the backup — it must restore byte-for-byte. Watch for `\subsubsection` inside
-comment lines (harmless, but count it so your roundtrip check is exact).
+Apply the map only to confirmed structural commands in included document files.
+Protect verbatim/listing/algorithm content, literal examples, comments, macro
+definitions, and generated files; a single global regex can damage them even
+when its inverse restores the bytes. Preview proposed edits and review each
+changed heading/TOC entry against the old hierarchy. An inverse-map diff can
+detect unintended textual loss, but it does not prove semantic correctness.
 
 ## Step 3 — Equation numbering (ctexbook regression)
 
@@ -74,48 +80,49 @@ The old ctexart numbered them **continuously**. Restore continuity explicitly:
 \makeatother
 ```
 
-Also swap any old `\numberwithin{X}{section}` → `{chapter}` (otherwise on ctexbook you get `n.m.k`).
+Inspect every old `\numberwithin{X}{section}` against the source counter model.
+Change it to `{chapter}` only when that counter should follow the remapped
+chapter level; definitions or other objects may intentionally remain section-based.
 
 ## Step 4 — Theorem counters (the two traps)
 
-### Trap A — a shared counter has no register
-`\newtheorem{proposition}[theorem]{命题}` does **not** create `\c@proposition`; it only makes
-`\theproposition` point at `\thetheorem`. `hyperref` / `cleveref` still evaluate `\the\c@proposition`,
-and if that register is `\relax` you get **`You can't use \relax after \the`**.
+### Trap A — shared and independent counters need different treatment
+`\newtheorem{proposition}[theorem]{命题}` uses the shared theorem counter rather
+than allocating an independent proposition counter. Inspect the actual theorem
+package, environment definitions, `\c@...`, `\the...`, hyperlink representations,
+and reference wrappers before changing them. A wrapper assuming an independent
+register can fail, but that is not a universal defect in shared-counter environments.
 
-When you tear down the class's theorem defs and rebuild them:
-
-```latex
-\def\MT@undefthm#1{%
-  \expandafter\let\csname #1\endcsname\relax
-  \expandafter\let\csname end#1\endcsname\relax
-  \expandafter\let\csname c@#1\endcsname\relax}
-% ... rebuild with \newtheorem{theorem}{定理}[chapter] then aliases [theorem] ...
-% then re-point each alias register at the shared one:
-\makeatletter
-\let\c@definition\c@theorem  \let\c@lemma\c@theorem
-\let\c@corollary\c@theorem   \let\c@proposition\c@theorem
-% ... one line per alias ...
-\makeatother
-```
+Preserve existing counter registers and sharing relationships. Do not undefine
+`\c@<name>`, allocate a replacement register, or force aliases merely to redefine
+an environment. Prefer changing display/reset behavior through the project's
+supported interface. If environment replacement is genuinely required, limit
+it to identified environment definitions, retain the original counter state,
+and verify all wrappers and hyperlink targets. Compare rendered numbers with the
+baseline and source before adopting any new sharing model.
 
 ### Trap B — residual `\@addtoreset` survives the redefine
-Redefining a theorem **does not** clear the class's `\@addtoreset{X}{section}` hook registered on
-`\cl@section`. After the remap, `\section` means a *subsection*, so every theorem counter resets on
-each subsection ⇒ visible number churn (1.1, 1.1, 1.1 …).
+An existing reset hook can survive an environment redefinition. Inspect the
+actual reset lists and intended source numbering first: after heading remapping,
+a reset on `section` may be correct for one counter and incorrect for another.
+Repeated visible numbers can indicate an inappropriate reset, but require
+checking the shared counter and source edition before changing it.
 
-Fix per-counter:
+For a confirmed counter that should no longer reset by section, remove only that
+relationship (example, not an instruction to change all environments):
 
 ```latex
 \makeatletter
 \@removefromreset{theorem}{section}
-\@removefromreset{definition}{section}  % ... etc ...
 \makeatother
 ```
 
 **Do NOT clear the whole `\cl@section` list.** It also carries book-class native hooks
-(`subsection`, `exercise`, …); wiping it stops subsubsections from resetting per section and
-introduces a *new* bug. On TeX Live 2026 `\@removefromreset` performs a precise list surgery — use it.
+(`subsection`, `exercise`, …); wiping it introduces unrelated numbering defects.
+Use a targeted reset operation supported by the actual toolchain, then verify
+the reset boundary and displayed/hyperlink representations across sections,
+chapters, and appendices. Shared counters need one change to the underlying
+counter, not blind changes to every environment name.
 
 ## Step 5 — Unnumbered 术语索引 / 参考文献 chapters
 
@@ -148,7 +155,9 @@ gets numbered and the index appears as "第 N 章". Override the chapter command
 ## Step 7 — Verify (do not trust "rc=0")
 
 1. Build with the project driver (`xelatex` ×3 + `biber`/`bibtex`; `texindy` for the index).
-   Require **errors=0, undefined=0**; treat `overfull`/`underfull` as cosmetic only.
+   Require **errors=0, undefined=0**. Review overfull/underfull findings on the
+   affected pages: some are harmless spacing warnings, while others indicate
+   clipped formulas, overlapping text, or lost readability and need repair.
 2. **Regression-audit the PDF against the pre-swap baseline** with `pymupdf` (text plus rendered page inspection when available):
    - Record and compare: heading sequence; equation-label multiset; theorem/lemma/prop numbering
      multiset; figure count; citation count; and the `\envenddiamond` glyph `\u22c4` count.

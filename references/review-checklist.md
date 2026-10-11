@@ -7,11 +7,19 @@ fluent Chinese while missing a mathematical or structural defect.
 
 - [ ] The Chinese is natural, concise, and suitable for mathematical writing.
 - [ ] No source sentence, heading, caption, footnote, or list item is omitted.
-- [ ] Terms match the documented project glossary, source definitions, and
-  appropriate available local references; uncertain choices are recorded.
+- [ ] Terms follow [terminology-policy.md](terminology-policy.md): each adopted
+  choice matches its source sense and recorded evidence. Candidate TSV entries
+  and inherited glossary decisions were checked before enforcing consistency.
+- [ ] Provisional/unresolved terms and alternatives are recorded; no inspected
+  source or terminology consensus is claimed from memory or an inaccessible URL.
 - [ ] Pronouns and omitted subjects remain unambiguous.
 - [ ] Logical connectors retain their force.
-- [ ] Proper names, transliterations, acronyms, and capitalization are stable.
+- [ ] All person-name components retain the original spelling throughout prose,
+  headings, captions, footnotes, bibliography, and index entries, including accents,
+  particles, compound surnames, and derived forms; no Chinese transliteration has
+  been substituted. Suspected source/OCR name defects were checked against pages.
+- [ ] Acronyms and code/literal identifiers retain their exact source forms;
+  name preservation has not introduced diacritics into protected tokens.
 - [ ] Punctuation and spacing are consistent.
 - [ ] If required by the selected template, Chinese prose double quotes use the TeX ligatures (two grave accents opening,
       two straight apostrophes closing), not Unicode curly quotes.
@@ -21,7 +29,7 @@ fluent Chinese while missing a mathematical or structural defect.
 - [ ] AI terminology follows source definitions; model, dataset, library, and
   metric identifiers retain their spelling and case.
 - [ ] English syntax/identifiers inside code and algorithms, literal examples, and intentional bilingual
-  terms has not been "fixed" by residual-English cleanup.
+  terms and preserved person names have not been "fixed" by residual-English cleanup.
 - [ ] Algorithm captions, descriptions after input/output labels, prose steps,
   verbal conditions, and explanatory comments are translated, even within a
   protected algorithm environment; API names and formulas remain exact.
@@ -41,13 +49,16 @@ fluent Chinese while missing a mathematical or structural defect.
   in-scope unit has actual translated content and source-review evidence.
 - [ ] No source-English page attachment, screenshot, unchanged TeX/OCR passage,
   or translated appendix title stands in for translating its body and proofs.
-- [ ] Every commutative/morphism diagram is rebuilt with `tikzcd`;
+- [ ] Every commutative/morphism diagram is rebuilt with `tikzcd` where its
+  geometry is expressible (essential ordinary-TikZ exceptions are documented);
   nodes, labels, directions, arrow styles, and commutativity match the source.
 - [ ] Other figures use faithful source assets or suitable redrawings; raster
   crops retain readable labels. Architecture/flow diagrams use suitable geometry.
 - [ ] If required by the selected template, display formulas use `align`-family environments with no juxtaposed
   `\[ \]` blocks; ordered lists use `enumerate`, never manual numbering.
-- [ ] Labels are unique and all references resolve to the intended objects.
+- [ ] Labels are unique and resolved internal references reach their actual
+  source targets; external locators and original-edition page references have
+  not been mistaken for translated-document references or assigned invented targets.
 - [ ] Citation keys and locators match the source.
 - [ ] Suspected source errors are recorded instead of silently altered.
 - [ ] Code/pseudocode keywords (including `for`, `do`, `end for`, `Input`, and
@@ -107,7 +118,8 @@ Record:
 - compilation command and result;
 - version of local terminology/template resources used and any explicitly
   requested external research;
+- inspected terminology evidence, preserved name forms, and provisional decisions;
 - unresolved ambiguities and known visual differences;
-- any intentional departure from the source.
+- any intentional departure from the source;
 - code/algorithm review coverage and any embedded image text or custom
   environments requiring manual review.

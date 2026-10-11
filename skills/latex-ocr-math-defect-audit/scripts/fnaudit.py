@@ -17,6 +17,7 @@ import io
 import glob
 import re
 import sys
+from fndump import find_footnotes as balanced_footnotes
 
 BS = chr(92)
 D = '$'
@@ -138,9 +139,12 @@ def main():
     verbose = '--verbose' in sys.argv
     n = 0
     bad = 0
-    for f in sorted(glob.glob('chapters/ch0*.tex')):
+    files = [arg for arg in sys.argv[1:] if arg != '--verbose'] or sorted(glob.glob('chapters/*.tex'))
+    if not files:
+        raise SystemExit('No TeX files found; supply source file paths.')
+    for f in files:
         src = io.open(f, encoding='utf-8').read()
-        for pos, ln, body in find_footnotes(src):
+        for ln, body in balanced_footnotes(src):
             n += 1
             has_math = (D in body) or (BS + 'begin{' in body) or (BS + '[' in body)
             if not has_math and not verbose:

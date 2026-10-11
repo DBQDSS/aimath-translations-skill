@@ -50,8 +50,8 @@ Scanner votes nominate a defect; the original PDF decides it.
 
 Vote on each section's **maximum arabic tag**:
 
-- `CONFLICT` — every source that has data agrees *and* disagrees with us → must fix.
-- `layer-ok` — source D agrees with us, the rest is noise → **we are right**.
+- `CONFLICT` — at least two supplied extraction sources agree and disagree with the project → inspect the source page before any fix. Verify source independence; multiple extractions are not votes on mathematical truth.
+- `layer-ok` — source D agrees with the project; inspect discrepancies rather than assuming other sources are noise.
 - `layer-diff` — D disagrees → inspect by hand (usually D's own artifact, see §Tool limits).
 - `agree` — everyone agrees. A source value of **0 means "no data"** and is excluded from the vote.
 
@@ -233,8 +233,7 @@ is for. Record them, explain the artifact, do not chase them.
 ## Closing the loop
 
 After any fix: recompile (twice), confirm 0 errors and no `Reference … undefined`, re-run
-`simulate_eq_numbers.py --check-aux` (must be 0 mismatches), re-run the 4-source vote until
-`CONFLICT` is empty, then re-run the project's pagination-dependent tooling (index rebaser,
+`simulate_eq_numbers.py --check-aux` (must be 0 mismatches), resolve each confirmed discrepancy from the source pages and record extraction false positives; rerun the comparison, then re-run the project's pagination-dependent tooling (index rebaser,
 overflow checker, regression suite). Equation-number changes *are* supposed to change
 `\eqref` output — that is the point — but **pagination will shift**, so the index links must
 be rebased afterwards.

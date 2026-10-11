@@ -39,11 +39,11 @@ def load(path):
     return open(path, encoding='utf-8', errors='replace').read()
 
 def extract_math(text):
-    clusters = []
-    for p in [r'\$\$(.+?)\$\$', r'\$(.+?)\$', r'\\\[(.+?)\\\]', r'\\\((.+?)\\\)']:
-        for m in re.finditer(p, text, re.S):
-            clusters.append(m.group(1))
-    return clusters
+    # One source-ordered pass prevents the single-$ pattern from swallowing
+    # text between adjacent $$ displays or counting one display twice.
+    pattern = re.compile(r'(?<!\\)\$\$(.*?)\$\$|(?<![\\$])\$(?!\$)(.*?)(?<!\\)\$(?!\$)|\\\[(.*?)\\\]|\\\((.*?)\\\)', re.S)
+    return [next(group for group in match.groups() if group is not None)
+            for match in pattern.finditer(text)]
 
 def is_math(seg):
     has_signal = any(c in MATH_SIGNALS for c in seg) or any(g in seg for g in GREEK)
@@ -55,10 +55,8 @@ def is_math(seg):
 
 def normalize(s):
     s = re.sub(r'\\[,;:!]', '', s)
-    s = s.replace('~', ' ')
-    s = re.sub(r'\\(mathbb|mathfrak|mathrm|mathbf|mathcal|operatorname|text|textbf|mathit|mathsf|mathscr)\b', '', s)
-    s = re.sub(r'\\([A-Za-z])', r'\1', s)      # \Q -> Q, \C -> C
-    s = s.replace('{', '').replace('}', '')
+    # Fonts, grouping and macros can carry mathematical meaning. Do not erase
+    # them or assume \Q == \mathbb{Q} without the project's macro definition.
     s = re.sub(r'\s+', '', s)
     return s
 

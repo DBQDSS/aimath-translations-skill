@@ -22,11 +22,12 @@ so you can eyeball whether any other name should have been a project macro.
 
 Scratch/backup dirs (_scratch, backup, *.bak) are skipped automatically.
 """
-import sys, os, re, glob
+import sys, os, re, glob, argparse
+from source_guard import mask_protected
 
 # The genuinely-wrong operator names (should have been project macros). Extend
 # per project ONLY with evidence; do not add Hom/Aut/Res/ord/Tr/Art here.
-ERROR_PATTERNS = [r'\\operatorname\{(Fr|N)\}']
+ERROR_PATTERNS = []  # No operator spelling is intrinsically wrong.
 
 SKIP = ('_scratch', 'backup', '.bak')
 
@@ -40,31 +41,41 @@ def iter_files(target, g):
         yield target
 
 def main():
-    target = sys.argv[1]
-    g = sys.argv[2] if len(sys.argv) > 2 else "*.tex"
+    parser = argparse.ArgumentParser(description='Inventory operators and report explicitly configured macro candidates.')
+    parser.add_argument('target')
+    parser.add_argument('glob', nargs='?', default='*.tex')
+    parser.add_argument('--expect', action='append', default=[], metavar='NAME=MACRO')
+    args = parser.parse_args()
+    expected = {}
+    for entry in args.expect:
+        name, separator, macro = entry.partition('=')
+        if not separator or not name or not macro:
+            parser.error('--expect requires NAME=MACRO')
+        expected[name] = macro
+    target, g = args.target, args.glob
     inventory = {}
     errors = []
     for f in iter_files(target, g):
-        txt = open(f, encoding='utf-8', errors='replace').read()
+        txt = mask_protected(open(f, encoding='utf-8').read())
         for m in re.finditer(r'\\operatorname\{([A-Za-z]+)\}', txt):
             inventory[m.group(1)] = inventory.get(m.group(1), 0) + 1
-        for pat in ERROR_PATTERNS:
-            for m in re.finditer(pat, txt):
+        for m in re.finditer(r'\\operatorname\{([A-Za-z]+)\}', txt):
+            if m.group(1) in expected:
                 ln = txt[:m.start()].count("\n") + 1
                 errors.append((f, ln, m.group(0)))
     print("=== \\operatorname{X} inventory (all files) ===")
     for name, c in sorted(inventory.items(), key=lambda kv: -kv[1]):
-        flag = "  <-- WRONG (use project macro)" if name in ("Fr", "N") else ""
+        flag = "  <-- verify configured macro %s" % expected[name] if name in expected else ""
         print("  %-6s %4d%s" % (name, c, flag))
-    print("\n=== ERROR-PATTERN hits (\\operatorname{Fr}/\\operatorname{N}) ===")
+    print("\n=== Configured macro candidates ===")
     if errors:
         for f, ln, s in errors:
             print("  %s:%d: %s" % (f, ln, s))
     else:
         print("  none  ->  OK")
-    print("\nERROR-PATTERN operator macros found: %d" % len(errors))
+    print("\nConfigured macro candidates found: %d" % len(errors))
     if len(errors) == 0:
-        print("OK: no hand-written \\operatorname{Fr}/\\operatorname{N} (use \\Frob/\\Nm).")
+        print("No configured candidates; verify notation against the source and project macros.")
 
 if __name__ == "__main__":
     main()

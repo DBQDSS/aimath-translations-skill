@@ -1,137 +1,95 @@
 # AI & Math Translations Skill
 
-`aimath-translations-skill` 用于将 AI、机器学习与数学书籍、论文、讲义及现有 LaTeX
-项目翻译为中文 LaTeX，并对译稿进行原文对照、修复和编译校对。Skill 指令与参考规则
-使用英文，本说明使用中文。
+将 AI、机器学习与数学书籍、论文、讲义及现有 LaTeX 项目翻译为中文 LaTeX，并支持原文对照、修复与编译校对。主入口为 [SKILL.md](SKILL.md)，不绑定特定模型；可按所用 Agent 的方式注册整个目录，或直接要求 Agent 读取入口文件。
 
-本项目 fork 自 [libinyam/mathtranslations-skill](https://github.com/libinyam/mathtranslations-skill)，
-沿用其数学忠实度、引用、术语和 LaTeX 审校机制，增加 AI 书目与代码、伪代码保真约束。
-这是独立维护的衍生项目；MathTranslations 的名称、模板文件名与审计配置名在涉及上游
-资源时保留。来源及授权说明见 [NOTICE.md](NOTICE.md)，许可见 [LICENSE](LICENSE)。
+本项目改编自 [libinyam/mathtranslations-skill](https://github.com/libinyam/mathtranslations-skill)。来源及资产说明见 [NOTICE.md](NOTICE.md)，许可见 [LICENSE](LICENSE)。
 
-## 核心规则
+## 翻译约束
 
-- 以出版原文 PDF 为内容依据；TeX 和 OCR 用于辅助恢复结构，疑似原文错误单独记录。
-- 保留公式、假设、量词、证明、编号、交叉引用、引文、脚注和章节结构。
-- **代码与伪代码关键字保持原文**：`for`、`do`、`end for`、`if`、`return`、
-  `Input`、`Output` 等不译为中文；标识符、字面量、缩进、控制流、循环边界和行号同样保留。
-  可翻译描述性标题、说明及不影响行为的自然语言注释；需检查 LaTeX 宏实际渲染的关键字。
-- 模型、数据集、指标、库名和版本保持准确；字面提示词、输入输出示例作为原始数据保留。
-- AI 公式核对张量维度、坐标轴、条件分布、归一化、梯度和优化更新；实验表格和曲线保留数据、
-  单位、误差条、基线及结论强度，不补造实验结果。
-- 数学交换图使用 `tikz-cd`；模型结构图、计算图、流程图和数据图根据内容使用 TikZ 或忠实原图。
-- 分别进行语言术语、内容结构、编译与页面核对。静态审计结果不等于数学或算法正确性证明。
+- 先确认用户指定的版本和范围，以该版本原文为内容依据；OCR 和抽取文本仅作辅助。全文任务包括附录、脚注、补充证明与前后置内容，并记录逐项覆盖情况。
+- 保留定义、假设、量词、证明、符号、编号、引用与结论强度。疑似原文错误单独记录，不静默改正。
+- **人名及人名衍生术语保留原书拼写**：`Cauchy sequence` → `Cauchy 列`，`Fréchet derivative` → `Fréchet 导数`，`Markov chain` → `Markov 链`。保留重音、连字符和原文衍生形式；`Gaussian` 不自行反推为 `Gauss`。规则覆盖标题、正文、脚注、图表和索引，不限于首次出现。
+- 保留代码、伪代码关键字、标识符、字面量和结构；翻译算法内的自然语言描述与安全的解释性注释。不能将整个算法块豁免为“不译”。
+- 模型、数据集、API、字面提示词、实验数据及单位保持源文忠实。翻译任务本身不要求运行训练或推理代码。
+- 沿用现有项目的模板和构建方式，仅在选择 MathTranslations 模板时应用其专属排版约定。
+- 静态扫描只是候选检查；编译成功不能证明数学、术语、编号或全文覆盖正确。
 
-代码和 AI 书目细则见 [references/ai-code-fidelity.md](references/ai-code-fidelity.md)。
+## 术语表如何使用
 
-## 使用方式
+[术语政策](references/terminology-policy.md) 是统一规则入口。[候选 TSV](references/terminology/terms.tsv) 的 74 条记录均为 `candidate`，**没有逐条外部权威核验，不是强制译名表，也不是官网数据库导出**。
 
-```bash
-git clone https://github.com/DBQDSS/aimath-translations-skill.git
-```
+先核对原文定义、领域和义项，再建立项目术语表，记录源文位置、采用形式、证据和状态。`compact` 的“紧 / 紧致”、不同微分变量下的 `score` 等不能只按单词匹配；不得把多候选单元格整体复制成正式译文。与原文语义、人名保留规则冲突的既有译名应记录并纠正，不做全局机械替换。无证据时保留原文、标记待核验，不能宣称“已获共识”。
 
-将整个仓库目录按所用 Agent 的安装方式注册为 skill，或在任务中要求 Agent 读取根目录
-`SKILL.md`。主 skill 的调用名与目录名相同：
+## 使用示例
 
 ```text
-使用 $aimath-translations-skill 将这本机器学习书籍翻译为中文 LaTeX。
-对照原始 PDF 保留数学内容和算法结构，代码与伪代码关键字保持原文，完成编译与校对。
+使用 $aimath-translations-skill 将所附机器学习讲义全文翻译为中文 LaTeX。
+人名及人名命名术语保留原书拼写；先建立项目术语表，逐项核验候选译名。
+保留数学、代码和伪代码语法，翻译算法说明，覆盖附录，完成编译与原文对照。
 ```
 
-审校已有项目：
+审校已有项目时，提供原始版本、译稿和可用的模板、TeX、图片、参考文献及构建说明，明确需要检查的范围。不支持 `$skill-name` 的 Agent 可直接读取本目录的 `SKILL.md`。`agents/openai.yaml` 是可选界面元数据。
 
-```text
-使用 $aimath-translations-skill 对照原始 PDF 审校这个 AI 书籍译稿，
-重点检查算法关键字、代码保真、公式、实验图表、引用和排版。
-```
-
-不支持 skill 调用语法的 Agent 可以直接读取 `aimath-translations-skill/SKILL.md`。
-`agents/openai.yaml` 是可选界面元数据，其他 Agent 可以直接使用 Markdown 指令。
-
-提供原始 PDF，以及可用的 TeX、参考文献、OCR Markdown、图像和已有译稿即可。
-现有项目沿用其模板与构建方式。仓库内置的是上游授权的 **legacy ctexart 单文件模板**
-与 logo；`mathtranslation.cls`、`tools/build.sh`、`tools/figcrop.py` 等项目工具未随包提供，
-使用这些变体时需有对应项目文件。Skill 不要求安装或运行书中的训练、下载与推理示例。
-
-## 审计与依赖
-
-基础审计仅依赖 Python 3 标准库：
-
-```bash
-python scripts/audit_latex.py path/to/project
-python scripts/audit_latex.py path/to/project --strict
-```
-
-只有选用对应上游模板时，才启用模板审计：
-
-```bash
-python scripts/audit_latex.py path/to/project --profile mathtranslations --strict
-```
-
-`mathtranslations` 是上游模板配置名，保留以兼容原有工作流，不代表主 skill 的调用名称。
-基础脚本检查重复标签、未定义引用与引文、缺失资源、待处理标记和编译日志；模板配置增加
-术语、长证明、封面及排版检查。已支持的代码环境与行内代码从正文检查中排除；算法语法
-不会因中文正文标点规则被要求改写。自定义环境、代码转义片段仍须人工核对。
-
-LaTeX 编译需要项目相应的 TeX 引擎、字体及参考文献或索引工具；PDF 提取、渲染或某些
-专项脚本需要 PyMuPDF，图像合成可能需要 Pillow，OCR 工作流还需可用的 OCR 引擎。
-按所选任务安装依赖，不要求统一安装所有工具。
-
-公式编号的旧版专项脚本通过 `AIMATH_ORIGINAL_PDF` 指定原书，
-`AIMATH_PROJECT_ROOT` 指定项目（默认当前工作目录），并可配置页码偏移与编号带边界。
-它们保留原来的特定标签和 OCR JSON 约定；使用前需读取该子 skill 的适用说明。
-编译辅助脚本从 PATH 或 `TEXLIVE_BIN` 查找工具，构建步骤失败时立即返回失败。
-
-已有审计回归测试可运行：
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-## 专项审校 skills
-
-以下子 skill 保留原名称，以对应已有脚本与实际模板。按需读取或单独注册；示例中的
-书籍编号、OCR 数据格式、分页偏移和计数器方案需要对照当前项目确认，不可直接套用。
-子 skill 中未随包提供的项目辅助脚本是可选例子，不能当作现成依赖。
-
-| 目录 | 用途 |
-|---|---|
-| `latex-translation-fidelity-audit` | 结构、引用、术语、数学符号和残留正文审校；排除应保留的代码与算法英文 |
-| `latex-eq-numbering-audit` | 对照原文核对公式编号 |
-| `latex-array-diagram-audit` | 交换图布局、箭头方向及节点完整性 |
-| `latex-display-layout-audit` | 公式版面修复，并保留公式编号 |
-| `latex-footnote-fidelity-audit` | 脚注内容与落点完整性 |
-| `latex-ocr-math-defect-audit` | OCR 引入的数学缺陷 |
-| `latex-bookmark-anchor-audit` | PDF 书签和目录链接目标 |
-| `mathtranslation-build-verify` | 项目编译、日志检查和页面核对 |
-| `mathtranslation-cls-v31-upgrade` | 在明确需要时迁移到所提供的 v3.1 类文件 |
-| `mathtranslation-hardref` | 将已确认目标的硬编码引用转换为交叉引用 |
-| `math-pdf-bookmark` | 为 PDF 添加与标题位置对应的书签 |
-| `pdf-scanned-ocr-bookmark` | 扫描 PDF 的文字层与书签工作流 |
-
-## 目录
+## 目录和模板
 
 ```text
 aimath-translations-skill/
 ├── SKILL.md
-├── README.md
-├── NOTICE.md
-├── LICENSE
+├── README.md / NOTICE.md / LICENSE
 ├── agents/openai.yaml
-├── assets/                         # 上游授权的 legacy 模板与 logo
-├── references/
-│   ├── ai-code-fidelity.md
-│   ├── workflow.md
-│   ├── latex-quality.md
-│   ├── review-checklist.md
-│   └── mathtranslations-template.md
+├── assets/                      # 唯一一份 legacy 模板和 logo
+├── references/                  # 工作流、术语政策、模板及审校说明
+│   ├── terminology/terms.tsv    # 候选术语及状态、来源限制
+│   └── resource-provenance.json # 来源范围和资产哈希
 ├── scripts/audit_latex.py
-├── tests/
-└── skills/                         # 12 个专项审校 skill 及其已有脚本
+├── skills/                      # 12 个专项审校入口及辅助脚本
+└── tests/                       # 行为回归测试
 ```
 
-## 来源与许可
+普通使用不依赖官网可用，也不会自动刷新本地资料。需要查证有争议术语时按任务条件使用可靠来源，并记录实际查证范围。
 
-本仓库继承上游 MIT 许可及其版权声明。随附模板与 logo 的授权来源沿用上游
-`NOTICE.md` 记载，本 fork 不将上游资源改称为自己的原创资源。在线术语数据、原始书籍、
-论文、代码示例与数据集仍受各自许可约束；仓库的 MIT 许可不替代这些作品的授权。
+选择随附模板时，按 [legacy 模板说明](references/legacy-template.md) 从 `assets/` 复制 TeX 和 logo，同时保留根目录 MIT 许可。它是固定的 ctexart 模板，不是最新版承诺。用户提供 `mathtranslation.cls` 时读 [模板适配说明](references/mathtranslations-template.md)，核实实际接口；类文件和项目专用构建工具未随包提供。
+
+本次移除了重复的 `MathTranslations/` 资料树：模板回归 `assets/`，模板说明和来源记录归入 `references/`，术语表移至 `references/terminology/terms.tsv`。旧路径和旧 TSV 的 `chinese` 列已迁移为 `candidate_zh`；依赖旧路径的外部脚本需更新。12 个专项 skill 名称保持不变。
+
+## 审计与验证
+
+基础审计仅依赖 Python 3 标准库，从本仓库根目录运行：
+
+```bash
+python scripts/audit_latex.py path/to/project
+python scripts/audit_latex.py path/to/project --strict
+python scripts/audit_latex.py path/to/project --profile mathtranslations --strict
+python -m unittest discover -s tests -v
+```
+
+模板配置仅适用于所选 MathTranslations 模板。它检查标签、引用、资源、日志及特定模板约定，不能判定每个术语是否合适。漏译扫描为：
+
+```bash
+python skills/latex-translation-fidelity-audit/scripts/residual_english_scan.py path/to/project
+```
+
+英文人名与代码不是自动翻译指令；扫描输出须回源判断。章节计数与旧式公式编号工具可能依赖特定文件名、OCR 结构、页码偏移和编号模型，使用前阅读对应说明。未覆盖文件须另行审查。修改引用前确认目标和渲染编号，先预览差异；歧义不得靠猜测批量修复。
+
+LaTeX 编译需要实际项目的 TeX 引擎、字体、参考文献及索引工具。PDF 专项工具可能需要 PyMuPDF、Pillow 或 OCR 引擎，按需配置。`AIMATH_ORIGINAL_PDF`、`AIMATH_PROJECT_ROOT` 和 `TEXLIVE_BIN` 等配置示例不包含个人机器路径。
+
+| 专项入口 | 用途 |
+|---|---|
+| `latex-translation-fidelity-audit` | 覆盖、引用、术语、符号、算法说明 |
+| `latex-eq-numbering-audit` | 原文公式编号对照 |
+| `latex-array-diagram-audit` | 交换图节点、箭头和布局 |
+| `latex-display-layout-audit` | 展示公式版面 |
+| `latex-footnote-fidelity-audit` | 脚注内容及落点 |
+| `latex-ocr-math-defect-audit` | OCR 数学缺陷 |
+| `latex-bookmark-anchor-audit` | 书签和目录链接目标 |
+| `mathtranslation-build-verify` | 编译、日志及页面核对 |
+| `mathtranslation-cls-v31-upgrade` | 用户指定的类文件迁移 |
+| `mathtranslation-hardref` | 已确认目标的硬编码引用转换 |
+| `math-pdf-bookmark` | PDF 标题书签 |
+| `pdf-scanned-ocr-bookmark` | 扫描 PDF 文字层与书签 |
+
+## 发布与隐私
+
+发布 skill 时排除 `.git/`、缓存、日志、私人原稿和项目配置；需要干净发布包时从审核过的文件创建新仓库或压缩包。忽略规则不会清除旧 Git 历史中的数据。译稿封面、PDF 元数据、批注及源文件中的译者或模型信息应按用户选定的公开署名填写，不复制本机账号、私人路径或内部信息。
+
+保留上游版权和公开来源不属于隐私泄露。仓库 MIT 许可不替代原书、论文、数据库和外部素材的授权。本次审查范围与测试结果见交付的任务报告。

@@ -74,10 +74,7 @@ def split_groups(inner):
             content, i = grab_group(inner, i)
             if content is None:
                 break
-            if content.startswith('{'):
-                out.extend(split_groups(content))
-            else:
-                out.append(content)
+            out.append(content)
         else:
             i += 1
     return out
@@ -112,6 +109,14 @@ def main():
     sec, subsec, thm, prob = {}, {}, {}, {}
     kinds = collections.Counter()
     unknown = collections.Counter()
+    collisions = set()
+
+    def add(mapping, number, label):
+        if number in mapping and mapping[number] != label:
+            mapping[number] = None
+            collisions.add(number)
+        else:
+            mapping.setdefault(number, label)
 
     files = sorted(glob.glob(os.path.join(root, a.aux_glob)))
     if not files:
@@ -120,8 +125,9 @@ def main():
     for f in files:
         ch = chapter_roman(f)
         if ch is None:
+            print('!! Cannot infer chapter from %s; its labels were not mapped.' % f)
             continue
-        text = open(f, encoding='utf-8', errors='replace').read()
+        text = open(f, encoding='utf-8').read()
         for mm in re.finditer(r'\\newlabel\{([^}]*)\}\{', text):
             key = mm.group(1)
             if key.endswith('@cref'):
@@ -137,13 +143,13 @@ def main():
             kinds[ctr] += 1
             nums = num.split('.')
             if ctr == 'section' and len(nums) == 2:
-                sec['%s.%s' % (ch, nums[1])] = key
+                add(sec, '%s.%s' % (ch, nums[1]), key)
             elif ctr == 'subsection' and len(nums) == 3:
-                subsec['%s.%s.%s' % (ch, nums[1], nums[2])] = key
+                add(subsec, '%s.%s.%s' % (ch, nums[1], nums[2]), key)
             elif ctr in ex_ctr and len(nums) == 2:
-                prob['%s.%s.%s' % (ch, nums[0], nums[1])] = key
+                add(prob, '%s.%s.%s' % (ch, nums[0], nums[1]), key)
             elif ctr in thm_ctr and len(nums) == 2:
-                thm['%s.%s.%s' % (ch, nums[0], nums[1])] = key
+                add(thm, '%s.%s.%s' % (ch, nums[0], nums[1]), key)
             elif ctr not in ign_ctr:
                 unknown[ctr] += 1
 
@@ -152,6 +158,8 @@ def main():
               open(out, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 
     print('anchor kinds : %s' % dict(kinds))
+    if collisions:
+        print('!! Ambiguous printed-number keys (mapped to null; no automatic rewrite): %s' % sorted(collisions))
     if unknown:
         print('!! UNCLASSIFIED counters (their entries were DROPPED): %s' % dict(unknown))
         print('   -> re-run with --theorem-counters / --exercise-counters extended.')
