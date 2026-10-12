@@ -1,6 +1,6 @@
 # AI & Math Translations Skill
 
-将 AI、机器学习与数学书籍、论文、讲义及现有 LaTeX 项目翻译为中文 LaTeX，并支持原文对照、修复与编译校对。主入口为 [SKILL.md](SKILL.md)，不绑定特定模型；可按所用 Agent 的方式注册整个目录，或直接要求 Agent 读取入口文件。
+将 AI、ML 与数学书籍、论文、讲义及现有 LaTeX 项目翻译为中文 LaTeX，并支持原文对照、修复与编译校对。主入口为 [SKILL.md](SKILL.md)，不绑定特定模型；可按所用 Agent 的方式注册整个目录，或直接要求 Agent 读取入口文件。
 
 本项目改编自 [libinyam/mathtranslations-skill](https://github.com/libinyam/mathtranslations-skill)。来源及资产说明见 [NOTICE.md](NOTICE.md)，许可见 [LICENSE](LICENSE)。
 
