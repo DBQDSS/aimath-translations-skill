@@ -38,6 +38,12 @@ the source, and maintained as a real LaTeX project.
    final pages as well as the source TOC. Track each unit as pending, translated,
    or source-reviewed. Appending original English pages is not translation.
 
+For large PDFs, inspect metadata and the TOC first, then extract only the needed
+page ranges. Send a few targeted page/figure previews per request; keep full-size
+assets on disk. A 413 response indicates a request-body limit, not proof that
+images alone caused it. Reduce attachments, embedded image bytes, and repeated
+history before retrying; retain the coverage map instead of dropping scope.
+
 ## Prepare The Project
 
 - Preserve an existing project's document class, packages, file layout, labels,
@@ -116,8 +122,12 @@ the source, and maintained as a real LaTeX project.
   ordinary TikZ for essential geometry it cannot express, and record the reason.
   Preserve every node, label, arrow direction,
   arrow style, and commutative relationship from the source.
-- For ordinary figures, prefer a faithful PDF crop; a raster export at a suitable
-  resolution (e.g. 400 DPI) is a fallback, not a lossless vector copy. Redraw
+- For ordinary figures, use a verified standalone vector asset when available.
+  A clipped source page is not necessarily a clean figure: clipping can retain
+  hidden page text and problematic transparency. Before importing PDF regions,
+  read [references/pdf-figure-safety.md](references/pdf-figure-safety.md) and check
+  both rendering and extracted text. Use an opaque raster crop when vector
+  import fails these checks; choose resolution for the final printed size. Redraw
   simple figures with TikZ when needed. Neural-network architectures, computation
   graphs, flowcharts, and plots need their own geometry, not forced `tikzcd`.
   Verify crop boundaries, labels, legends, and any translated text.
@@ -187,8 +197,8 @@ Verification is part of the translation, not an optional final polish.
 6. Reconcile the source coverage map with translated content and rendered headings,
    including every appendix and the last source page. A translated title, an English
    PDF attachment, matching page counts, or a clean build cannot establish coverage.
-   Keep remaining units pending and report partial progress; do not shorten the
-   scope to fit context/time limits or claim full completion with untranslated units.
+   Keep remaining units pending and report progress in commentary, then execute
+   the next unit. Apply the continuation and final-response gate below.
 
 For focused audits, read the relevant `skills/<name>/SKILL.md` only when needed.
 These inherited helpers may assume a particular book,
@@ -196,7 +206,38 @@ OCR schema, counter model, or toolchain. Verify those assumptions and required
 files before running them. Their examples do not override the source or the
 code/pseudocode preservation rules above; scanner hits require source review.
 
+## Continue Until The Requested Scope Is Finished
+
+A reviewable batch is a checkpoint, not a delivery boundary. After each batch,
+save the coverage ledger and the exact next source unit, report progress in
+commentary when useful, and immediately continue with that unit in the same task.
+Do not wait for “continue” or issue a final response merely because a partial PDF
+compiles, a chapter is finished, or the current batch/context is large. Honesty
+about incompleteness does not make voluntary early delivery acceptable.
+
+Keep a project-local durable ledger as specified in
+[workflow.md](references/workflow.md#continuation-ledger-and-execution-loop).
+Use smaller reads and batches and resume from that ledger after context
+compaction; do not reduce the user's requested scope. Estimated time, answer
+length, and anticipated context pressure are planning constraints, not blockers.
+
+Before final, check whether every requested unit is translated and reviewed and
+required verification is complete. This includes the available rendered-PDF
+visual check: do not defer it as optional “publication-quality polish” after a
+successful compile or text-only comparison. If work remains and a useful authorized next
+action is available, take it instead of finalizing. A final partial handoff is
+appropriate only for an explicit user stop/scope change, an actual platform
+execution limit, or an evidenced blocker after feasible recovery and independent
+work have been exhausted. Missing compilation tools block build verification,
+not translation of readable source. Record the failed action, recovery attempts,
+remaining units, exact next action, and the specific input needed to unblock.
+Do not promise to bypass platform limits or to run after the turn has ended.
+
 ## Report The Result
+
+Use this final report only after the completion gate above passes, or for a
+clearly labeled blocked/interrupted handoff. A progress update belongs in
+commentary and is followed by continued work, not a final partial-PDF delivery.
 
 Summarize:
 

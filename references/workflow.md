@@ -40,6 +40,20 @@ Rows are a coverage map, not proof of completion. Do not mark a unit translated
 because its heading exists or the original pages were inserted. Distinguish physical
 PDF page numbers from printed page labels; translated page numbers may differ.
 
+### Bound extraction and request size
+
+Start with metadata, TOC/bookmarks and the coverage map; extract the next coherent
+page range rather than dumping the whole PDF. Keep production images on disk and
+use small batches of targeted previews for review. Preview compression must not
+replace the full-quality production asset. When a service returns HTTP 413,
+record the actual error and reduce total serialized request bytes (attachments,
+base64 images, repeated history and text); token counts alone do not measure this
+limit. Retry with a materially smaller request, not the identical payload. No
+universal image count or DPI guarantees acceptance. If a fresh small request
+still fails, record the service error and continue independently actionable
+translation or review. Preserve the ledger; end with a partial handoff only when
+the continuation gate in SKILL.md permits it.
+
 ## 2. Choose Evidence Priority
 
 Identify the intended edition/version from the user's request before ranking
@@ -139,6 +153,43 @@ Work by a coherent unit such as a section or subsection:
 Keep units small enough that a missing paragraph, swapped equation, or broken
 reference can be localized quickly.
 
+### Continuation ledger and execution loop
+
+Before substantial translation, persist a project-local `coverage.md` (or the
+existing equivalent), not just a chat plan. Record source identity/version,
+requested scope and exclusions, stable unit IDs and source boundaries (including
+paragraph boundaries where a page splits a unit), destination files, statuses,
+review evidence, unresolved issues, and one exact **next action**. Include all
+in-scope units initially; later batching must not silently drop rows.
+
+For each unit: read its bounded source range, translate, check against the
+source, save artifacts and update the ledger, then select and execute the next
+pending unit. Save after every batch, before compaction, and before any genuine
+handoff. If a large unit needs splitting, retain its parent coverage and add
+subunits. On resumption, read the ledger and actual files, reconcile their state,
+and proceed from the first unfinished action instead of restarting or asking
+whether to continue. A running checkpoint PDF may be labeled partial; creating
+or linking it in commentary does not complete the task.
+
+The same loop applies to verification: compilation, source comparison, and
+available rendered-page visual review are pending actions until actually done.
+Do not relabel required review as optional publication polish or silently weaken
+the agreed completion criteria to reach final sooner.
+
+When remaining work is actionable, final is not a progress-report channel.
+Example: after completing pages 1–6 of a requested 22-page paper, record pages
+7–22 as pending, identify the next paragraph, briefly update commentary, and
+read/translate it now. “Only six pages are done; ask me to continue” fails this
+workflow even if accurate. A requested six-page excerpt, by contrast, may be
+finished once its own scope and checks are complete.
+
+An actual inaccessible source, repeated unrecoverable tool error, missing
+required authorization, or enforced platform limit can justify a handoff after
+available recovery and independent work. Preserve error evidence and the next
+action. Context estimates, reply length, batch size, or an arbitrary page target
+cannot. These instructions improve continuity within available execution; they
+do not guarantee execution beyond platform limits.
+
 ## 6. Handle Special Content
 
 ### Definitions, Theorems, And Proofs
@@ -159,15 +210,14 @@ and display grouping; do not mechanically wrap or merge separate equations.
 
 ### Figures And Tables
 
-For ordinary figures, prefer a faithful PDF crop when usable. Re-render a source
-region at a suitable resolution (e.g. 400 DPI) only as a raster fallback, not
-lossless vector output; verify small labels and crop boundaries. Redraw simple figures
-with ordinary TikZ; rebuild arrow-and-node diagrams with `tikz-cd` (never
-screenshots of them). If supplied, use the project's `tools/figcrop.py` to locate each
-`Fig. N.M` caption and crop its bounding box to `images/fig/fig-X-Y.png`, then
-repoint `\includegraphics` with its `tools/rewire_figures.py` (back up `chapters/`
-first). Translate captions and table text without changing data. Preserve labels
-and references. If an asset is missing, use an explicit placeholder and report it
+Read [PDF figure safety](pdf-figure-safety.md) before importing source PDF regions.
+Prefer verified standalone vector assets; a page clip is not evidence that hidden
+text was removed. Validate rendering and text extraction independently. If vector
+import leaks page text or changes transparency, use an opaque RGB raster crop at
+a resolution appropriate to the final printed size, then inspect small labels.
+Project crop/rewire tools are optional: inspect their actual behavior before use.
+Translate captions and table text without changing data. Preserve labels and
+references. If an asset is missing, use an explicit placeholder and report it
 rather than inventing a replacement.
 
 Rebuild commutative diagrams, morphism diagrams, category diagrams, exact

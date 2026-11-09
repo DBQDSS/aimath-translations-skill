@@ -102,3 +102,11 @@ Inspect overfull boxes for clipping; harmless warnings need not force unrelated 
 Report confirmed defects and repairs with source locations, candidate-only findings,
 checked scope, build results and remaining limitations. A clean log or zero scanner
 hits does not establish full translation, appendix coverage, or semantic correctness.
+
+## Imported PDF figure checks
+
+For PDF crops or reported selection/black-patch defects, use
+[PDF figure safety](../../references/pdf-figure-safety.md). Check the standalone
+asset and the final compiled page, both visually and by text extraction. Clipping,
+a clean build, or zero extracted text alone cannot establish correct rendering.
+Record the renderer used and any reader-specific behavior that remains untested.

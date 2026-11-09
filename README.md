@@ -32,6 +32,10 @@
 
 编译 PDF 需准备项目所需的 TeX 引擎、字体及参考文献工具。扫描和编译检查不能替代原文对照。
 
+复用 PDF 配图时，裁剪只改变可见范围，不保证清除隐藏文字或对象；需同时检查页面外观、文字抽取及可用阅读器中的选择/复制行为。黑块应先定位再诊断，不能直接归因为图片透明度。大文件遇到 HTTP 413 时应缩小审阅预览及请求体；离线缩减大小不代表线上重试成功。操作步骤见 [PDF 导入验证](docs/pdf-import-validation.md)。
+
+默认完成用户指定的整个范围。分批只是内部检查点：保存逐单元覆盖账本与下一步后继续执行，进度通过 commentary 汇报，不以部分 PDF 的 final 交付要求用户反复说“继续”。只有完成所需翻译与验证，或用户叫停、真实阻塞／平台实际限制时才结束；上下文整理后依据账本续接。这不能保证突破平台执行上限。详见[持续执行规则](references/workflow.md#continuation-ledger-and-execution-loop)。
+
 ## 使用文档
 
 | 文档 | 内容 |
@@ -39,6 +43,7 @@
 | [完整工作流](SKILL.md) | 翻译约束、处理步骤与交付要求 |
 | [术语政策](references/terminology-policy.md) | 术语选择与人名规则；随附术语表仅供候选参考 |
 | [模板说明](references/legacy-template.md) / [模板适配](references/mathtranslations-template.md) | 随附 ctexart 模板与用户提供的类文件 |
+| [PDF 导入验证](docs/pdf-import-validation.md) | 裁剪隐藏内容、视觉与文字检查、黑块定位及请求大小验证 |
 | [开发与维护](docs/development.md) | 仓库结构、验证命令、专项工具与发布说明 |
 
 ## 致谢与许可

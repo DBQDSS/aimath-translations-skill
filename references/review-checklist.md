@@ -108,6 +108,14 @@ fluent Chinese while missing a mathematical or structural defect.
       when used, `\printterminology` is the final
       document content.
 
+## Final-response gate
+
+- [ ] The durable ledger agrees with the actual translated files and review evidence.
+- [ ] No actionable in-scope translation or verification remains. If it does,
+      continue it and put the update in commentary instead of delivering final.
+- [ ] Any incomplete final handoff has a user stop or an evidenced actual blocker,
+      recovery attempts, outstanding scope, and an exact resumption action.
+
 ## Completion Note
 
 Record:

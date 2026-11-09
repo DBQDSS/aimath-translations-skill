@@ -370,3 +370,11 @@ pointing at the last index page instead of the first — is the entire bug.
   (Foxit / Edge / …) that has the file open re-locks it after each rewrite, so pass N can fail while
   pass N−1 succeeded. Retry the pass (2–3×, ~3 s apart) instead of hunting for a LaTeX bug; the
   preceding pass already wrote a complete PDF.
+
+## Imported PDF figure checks
+
+For PDF crops or reported selection/black-patch defects, use
+[PDF figure safety](../../references/pdf-figure-safety.md). Check the standalone
+asset and the final compiled page, both visually and by text extraction. Clipping,
+a clean build, or zero extracted text alone cannot establish correct rendering.
+Record the renderer used and any reader-specific behavior that remains untested.
